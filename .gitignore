@@ -1,0 +1,5 @@
+data/yelp*
+data/dataframes.pkl
+data/joined_dataframe.pkl
+*.pyc
+
