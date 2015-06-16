@@ -20,7 +20,7 @@ business_filename = '../data/yelp_academic_dataset_business.json'
 business_pickle_filename = '../data/business_id_map.pkl'
 review_filename = '../data/yelp_academic_dataset_review_notext.json'
 
-dataframes_pickle_filename = '../data/dataframe.pkl'
+dataframes_pickle_filename = '../data/dataframes.pkl'
 joined_dataframe_pickle_filename = '../data/joined_dataframe.pkl'
 
 
@@ -37,7 +37,7 @@ def find_id_map(data_json, id_label, pickle_filename):
     """
     id_map = {}  # empty dict.
     if os.path.exists(pickle_filename):
-        print "Reading from the pickled data..." + pickle_filename
+        print "Reading from the pickled data:" + pickle_filename
         with open(pickle_filename, 'r') as f:
             id_map = pickle.load(f)
     else:
@@ -75,14 +75,13 @@ def main():
             user['user_id_int'] = user_id_map[user['user_id']]
             user['user_review_count'] = int(user['review_count'])
             user['user_stars'] = float(user['average_stars'])
-            user['user_type'] = user['type']
             # delete all other values not necessary here.
             for key in original_keys:
                 user.pop(key, None)
 
         # Convert the new list into the dataframe.
         user_df = pd.read_json(json.dumps(user_jsons))
-        print "Done for users."
+        print "Done for users with %s users." % n_users
 
         # Read json file for business.
         business_jsons = read_json_file(business_filename)
@@ -93,6 +92,7 @@ def main():
         # For each business, pick only necessary columns.
         categories_map = {}  # Storing category information in a separate dict.
         for business in business_jsons:
+            original_keys = business.keys()
             business_id = business_id_map[business['business_id']]
             categories_map[business_id] = business['categories']
             business['business_id_int'] = business_id
@@ -103,12 +103,12 @@ def main():
             business['business_latitude'] = float(business['latitude'])
             business['business_longitude'] = float(business['longitude'])
             # delete all other values not necessary here.
-            for key in business.keys():
+            for key in original_keys:
                 business.pop(key, None)
 
         # Convert the new list into the dataframe.
         business_df = pd.read_json(json.dumps(business_jsons))
-        print "Done for businesses."
+        print "Done for businesses with %s businesses." % n_businesses
 
         # Read json file for reviews.
         review_jsons = read_json_file(review_filename)
@@ -126,7 +126,7 @@ def main():
 
         # Convert the new list into the dataframe.
         review_df = pd.read_json(json.dumps(review_jsons))
-        print "Done for reviews."
+        print "Done for reviews with %s reviews." % n_reviews
 
         # Storing these dataframes as a pickled file.
         with open(dataframes_pickle_filename, 'wb') as f:
