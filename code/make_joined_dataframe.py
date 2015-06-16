@@ -37,7 +37,7 @@ def find_id_map(data_json, id_label, pickle_filename):
     """
     id_map = {}  # empty dict.
     if os.path.exists(pickle_filename):
-        print "Reading from the pickled data..."
+        print "Reading from the pickled data..." + pickle_filename
         with open(pickle_filename, 'r') as f:
             id_map = pickle.load(f)
     else:
@@ -57,77 +57,81 @@ def main():
     From 3 json files, it will combine data and create a new dataframe,
     and store it in a pickled file.
     """
-    # Read json file for user.
-    user_jsons = read_json_file(user_filename)
-    # Each user will be assigned with an integer instead of string user_id's.
-    # This mapping data will be stored in a dictionary, and will be pickled.
-    # But if this info is already pickled it will just read from it.
-    user_id_map = find_id_map(user_jsons, 'user_id', user_pickle_filename)
-    n_users = len(user_id_map)   # Total number of users.
+    if os.path.exists(dataframes_pickle_filename):
+        with open(dataframes_pickle_filename, 'r') as f:
+            (user_df, business_df, review_df) = pickle.load(f)
+    else:
+        # Read json file for user.
+        user_jsons = read_json_file(user_filename)
+        # Each user will be assigned with an integer instead of string user_id
+        # This mapping data will be stored in a dictionary, and will be pickled.
+        # But if this info is already pickled it will just read from it.
+        user_id_map = find_id_map(user_jsons, 'user_id', user_pickle_filename)
+        n_users = len(user_id_map)   # Total number of users.
 
-    # For each user, pick only necessary columns.
-    for user in user_jsons:
-        original_keys = user.keys()
-        user['user_id_int'] = user_id_map[user['user_id']]
-        user['user_review_count'] = int(user['review_count'])
-        user['user_stars'] = float(user['average_stars'])
-        user['user_type'] = user['type']
-        # delete all other values not necessary here.
-        for key in original_keys:
-            user.pop(key, None)
+        # For each user, pick only necessary columns.
+        for user in user_jsons:
+            original_keys = user.keys()
+            user['user_id_int'] = user_id_map[user['user_id']]
+            user['user_review_count'] = int(user['review_count'])
+            user['user_stars'] = float(user['average_stars'])
+            user['user_type'] = user['type']
+            # delete all other values not necessary here.
+            for key in original_keys:
+                user.pop(key, None)
 
-    # Convert the new list into the dataframe.
-    user_df = pd.read_json(json.dumps(user_jsons))
+        # Convert the new list into the dataframe.
+        user_df = pd.read_json(json.dumps(user_jsons))
+        print "Done for users."
 
-    # Read json file for business.
-    business_jsons = read_json_file(business_filename)
-    business_id_map = find_id_map(business_jsons, 'business_id',
-                                  business_pickle_filename)
-    n_businesses = len(business_id_map)   # Total number of businesses.
+        # Read json file for business.
+        business_jsons = read_json_file(business_filename)
+        business_id_map = find_id_map(business_jsons, 'business_id',
+                                    business_pickle_filename)
+        n_businesses = len(business_id_map)   # Total number of businesses.
 
-    # For each business, pick only necessary columns.
-    categories_map = {}  # Storing category information in a separate dict.
-    for business in business_jsons:
-        business_id = business_id_map[business['business_id']]
-        categories_map[business_id] = business['categories']
-        business['business_id_int'] = business_id
-        business['business_review_count'] = int(business['review_count'])
-        business['business_stars'] = float(business['stars'])
-        business['business_type'] = business['type']
-        business['business_city'] = business['city']
-        business['business_latitude'] = float(business['latitude'])
-        business['business_longitude'] = float(business['longitude'])
-        # delete all other values not necessary here.
-        for key in business.keys():
-            business.pop(key, None)
+        # For each business, pick only necessary columns.
+        categories_map = {}  # Storing category information in a separate dict.
+        for business in business_jsons:
+            business_id = business_id_map[business['business_id']]
+            categories_map[business_id] = business['categories']
+            business['business_id_int'] = business_id
+            business['business_review_count'] = int(business['review_count'])
+            business['business_stars'] = float(business['stars'])
+            business['business_type'] = business['type']
+            business['business_city'] = business['city']
+            business['business_latitude'] = float(business['latitude'])
+            business['business_longitude'] = float(business['longitude'])
+            # delete all other values not necessary here.
+            for key in business.keys():
+                business.pop(key, None)
 
-    # Convert the new list into the dataframe.
-    business_df = pd.read_json(json.dumps(business_jsons))
+        # Convert the new list into the dataframe.
+        business_df = pd.read_json(json.dumps(business_jsons))
+        print "Done for businesses."
 
-    # Read json file for reviews.
-    review_jsons = read_json_file(review_filename)
-    # Each user will be assigned with an integer instead of string user_id's.
-    # This mapping data will be stored in a dictionary, and will be pickled.
-    # But if this info is already pickled it will just read from it.
-    user_id_map = find_id_map(user_jsons, 'user_id', user_pickle_filename)
-    n_users = len(user_id_map)   # Total number of users.
+        # Read json file for reviews.
+        review_jsons = read_json_file(review_filename)
+        n_reviews = len(review_jsons)   # Total number of reviews.
 
-    # For each user, pick only necessary columns.
-    for review in review_jsons:
-        original_keys = review.keys()
-        review['business_id_int'] = business_id_map[review['business_id']]
-        review['user_id_int'] = user_id_map[review['user_id']]
-        review['review_stars'] = int(review['stars'])
-        # delete all other values not necessary here.
-        for key in original_keys:
-            review.pop(key, None)
+        # For each user, pick only necessary columns.
+        for review in review_jsons:
+            original_keys = review.keys()
+            review['business_id_int'] = business_id_map[review['business_id']]
+            review['user_id_int'] = user_id_map[review['user_id']]
+            review['review_stars'] = int(review['stars'])
+            # delete all other values not necessary here.
+            for key in original_keys:
+                review.pop(key, None)
 
-    # Convert the new list into the dataframe.
-    review_df = pd.read_json(json.dumps(review_jsons))
+        # Convert the new list into the dataframe.
+        review_df = pd.read_json(json.dumps(review_jsons))
+        print "Done for reviews."
 
-    # Storing these dataframes as a pickled file.
-    with open(dataframes_pickle_filename, 'wb') as f:
-        pickle.dump((user_df, business_df, review_df), f)
+        # Storing these dataframes as a pickled file.
+        with open(dataframes_pickle_filename, 'wb') as f:
+            pickle.dump((user_df, business_df, review_df), f)
+    return
 
 
 if __name__ == '__main__':
