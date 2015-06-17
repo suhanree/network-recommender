@@ -56,7 +56,9 @@ def main():
             id = user_id_map[user_json['user_id']]
             friend_list = []
             for friend in user_json['friends']:
-                friend_list.append(user_id_map[friend])
+                friend_id = user_id_map[friend]
+                if id < friend_id:
+                    friend_list.append(friend_id)
             degrees[id] = len(friend_list)
             csv_writer.writerow([id] + friend_list)
 

@@ -7,9 +7,9 @@
 import pandas as pd
 # import numpy as np
 import json
-import csv
 import os
 import cPickle as pickle
+from sklearn.cluster import KMeans
 
 from my_utilities import read_json_file
 
@@ -21,7 +21,7 @@ business_pickle_filename = '../data/business_id_map.pkl'
 review_filename = '../data/yelp_academic_dataset_review_notext.json'
 
 dataframes_pickle_filename = '../data/dataframes.pkl'
-joined_dataframe_pickle_filename = '../data/joined_dataframe.pkl'
+review_dataframe_pickle_filename = '../data/review_dataframe%s.pkl'
 
 
 def find_id_map(data_json, id_label, pickle_filename):
@@ -86,7 +86,7 @@ def main():
         # Read json file for business.
         business_jsons = read_json_file(business_filename)
         business_id_map = find_id_map(business_jsons, 'business_id',
-                                    business_pickle_filename)
+                                      business_pickle_filename)
         n_businesses = len(business_id_map)   # Total number of businesses.
 
         # For each business, pick only necessary columns.
@@ -98,7 +98,6 @@ def main():
             business['business_id_int'] = business_id
             business['business_review_count'] = int(business['review_count'])
             business['business_stars'] = float(business['stars'])
-            business['business_type'] = business['type']
             business['business_city'] = business['city']
             business['business_latitude'] = float(business['latitude'])
             business['business_longitude'] = float(business['longitude'])
@@ -131,6 +130,31 @@ def main():
         # Storing these dataframes as a pickled file.
         with open(dataframes_pickle_filename, 'wb') as f:
             pickle.dump((user_df, business_df, review_df), f)
+
+    # Now we find data frames for reviews for specific cities.
+    # From the business locations, we find ten cities using k-Means.
+    km = KMeans(10, n_jobs=8)
+    X = business_df[['business_latitude', 'business_longitude']].values
+    y = km.fit_predict(X)
+    business_df['business_city_int'] = y  # Store city info as a column.
+
+    # Dataframe with the reviews (with business city).
+    review_city_df = business_df[['business_id_int', 'business_city_int']]\
+        .merge(review_df, on=['business_id_int'], how='inner')
+    # Reviews for three specific cities.
+    review_montreal = review_city_df[review_city_df.business_city_int == 3]\
+        .drop(['business_city_int'], axis=1)  # Montreal
+    review_phoenix = review_city_df[review_city_df.business_city_int == 1]\
+        .drop(['business_city_int'], axis=1)   # Phoenix
+    review_lasvegas = review_city_df[review_city_df.business_city_int == 5]\
+        .drop(['business_city_int'], axis=1)  # Las Vegas
+    reviews = [review_df, review_phoenix, review_lasvegas, review_montreal]
+
+    # Store them in pickled files.
+    # i=0:all, 1:Phoenix, 2:Las Vegas, 3:Montreal
+    for i in range(4):
+        with open(review_dataframe_pickle_filename % i, 'wb') as f:
+            pickle.dump(reviews[i], f)
     return
 
 
