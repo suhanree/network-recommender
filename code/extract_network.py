@@ -15,7 +15,7 @@ from my_utilities import read_json_file
 # Filename for the pickled data of user_id and numbered id map.
 userdata_filename = '../data/yelp_academic_dataset_user.json'
 pickle_filename = '../data/user_id_map.pkl'
-network_filename = '../data/newtork_data.csv'
+network_filename = '../data/network.csv'
 degree_filename = '../data/degrees'
 
 
@@ -57,8 +57,7 @@ def main():
             friend_list = []
             for friend in user_json['friends']:
                 friend_id = user_id_map[friend]
-                if id < friend_id:
-                    friend_list.append(friend_id)
+                friend_list.append(friend_id)
             degrees[id] = len(friend_list)
             csv_writer.writerow([id] + friend_list)
 

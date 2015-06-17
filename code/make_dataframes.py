@@ -9,6 +9,7 @@ import pandas as pd
 import json
 import os
 import cPickle as pickle
+from collections import Counter
 from sklearn.cluster import KMeans
 
 from my_utilities import read_json_file
@@ -37,7 +38,7 @@ def find_id_map(data_json, id_label, pickle_filename):
     """
     id_map = {}  # empty dict.
     if os.path.exists(pickle_filename):
-        print "Reading from the pickled data:" + pickle_filename
+        print "Reading from the pickled data:", pickle_filename
         with open(pickle_filename, 'r') as f:
             id_map = pickle.load(f)
     else:
@@ -136,25 +137,38 @@ def main():
     km = KMeans(10, n_jobs=8)
     X = business_df[['business_latitude', 'business_longitude']].values
     y = km.fit_predict(X)
-    business_df['business_city_int'] = y  # Store city info as a column.
+    y_counter = Counter(y).most_common()
+    sorted_y = [c[0] for c in y_counter]
+    sorted_y_map = {}
+    for i in range(10):
+        sorted_y_map[sorted_y[i]] = i
+    # Store city info as a column. To make city numbers deterministic, City
+    # numbers are ordered from the largest num of businesses to the smallest.
+    business_df['business_city_int'] = map(lambda i: sorted_y_map[i], y)
+    # city_names = ['Phoenix', 'Las Vegas', 'Charlotte', 'Montreal',
+    #               'Edinburgh', 'Pittsburgh',  'Madison', 'Karlsruhe',
+    #               'Urbana-Champaign', 'Waterloo']
 
     # Dataframe with the reviews (with business city).
     review_city_df = business_df[['business_id_int', 'business_city_int']]\
         .merge(review_df, on=['business_id_int'], how='inner')
     # Reviews for three specific cities.
+    review_phoenix = review_city_df[review_city_df.business_city_int == 0]\
+        .drop(['business_city_int'], axis=1)   # Phoenix
+    review_lasvegas = review_city_df[review_city_df.business_city_int == 1]\
+        .drop(['business_city_int'], axis=1)  # Las Vegas
     review_montreal = review_city_df[review_city_df.business_city_int == 3]\
         .drop(['business_city_int'], axis=1)  # Montreal
-    review_phoenix = review_city_df[review_city_df.business_city_int == 1]\
-        .drop(['business_city_int'], axis=1)   # Phoenix
-    review_lasvegas = review_city_df[review_city_df.business_city_int == 5]\
-        .drop(['business_city_int'], axis=1)  # Las Vegas
-    reviews = [review_df, review_phoenix, review_lasvegas, review_montreal]
+    reviews = [review_phoenix, review_lasvegas, review_montreal]
 
     # Store them in pickled files.
-    # i=0:all, 1:Phoenix, 2:Las Vegas, 3:Montreal
-    for i in range(4):
-        with open(review_dataframe_pickle_filename % i, 'wb') as f:
+    # i=a:all, 0:Phoenix, 1:Las Vegas, 3:Montreal
+    cities = [0, 1, 3]
+    for i in range(3):
+        with open(review_dataframe_pickle_filename % cities[i], 'wb') as f:
             pickle.dump(reviews[i], f)
+    with open(review_dataframe_pickle_filename % 'a', 'wb') as f:
+        pickle.dump(review_city_df, f)
     return
 
 
