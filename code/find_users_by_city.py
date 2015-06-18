@@ -1,54 +1,29 @@
 # Find the users for each given city, and find degree distribution
 # of these users from this information.
+# Here users without any friend (192,621 out of 366,715) will not
+# be used for this analysis.
 
 # by Suhan Ree
-# last edited on 06-16-2015
+# last edited on 06-17-2015
 
 import numpy as np
-import csv
 import os
 import cPickle as pickle
 
+from my_utilities import write_dictlist_to_file, write_dict_to_file
+from my_utilities import read_dictlist_from_file
+
 # Filename for the pickled data of reviews with city info.
 review_city_dataframe_pickle_filename = '../data/review_dataframea.pkl'
-user_by_city_pickle_filename = '../data/user_by_city.pkl'
 network_filename = '../data/network.csv'
+degree_filename = '../data/network.csv'
+
+user_by_city_filename = '../data/user_by_city'
 network_city_filename = '../data/network%s.csv'
-degree_filename = '../data/degrees%s'
+degree_city_filename = '../data/degrees%s'
 
 
-def save_network_to_file(filename, network_dict):
-    """
-    Save the network data in dict to a csv file.
-    Input:
-        filename: filename for the network.
-        network_dict: network info saved in dict.
-    Output:
-        None
-    """
-    with open(filename, 'wb') as f:
-        csv_writer = csv.writer(f)
-        for key in network_dict:
-            csv_writer.writerow([key] + network_dict[key])
-    return
-
-
-def save_degree_to_file(filename, degrees):
-    """
-    Save the degree data in array to a file.
-    Input:
-        filename: filename for the degree.
-        degrees: degree info saved in a dict
-    Output:
-        None
-    """
-    with open(filename, 'wb') as f:
-        for id in degrees:
-            f.write(str(id) + ',' + str(degrees[id]) + '\n')
-    return
-
-
-def find_city(user_id, user_cities, friends, user_city_info):
+def find_city(user_id, user_cities, friends, user_city_int):
     """
     Determine the city when the user left reviews in multiple cities.
     Basic idea is that the user will belong to the city where most of
@@ -62,13 +37,12 @@ def find_city(user_id, user_cities, friends, user_city_info):
     Output:
         city: city (int)
     """
-    city_info = user_city_info.copy()
     nfriends = []
     for city in user_cities:
         nfriend = 0
-        #print user_id, user_id in friends
+        # print user_id, user_id in friends
         for friend in friends[user_id]:
-            if city_info[friend] > -1 and city == city_info[friend]:
+            if friend in user_city_int and city == user_city_int[friend]:
                 nfriend += 1
         nfriends.append(nfriend)
     # To find ties, we use a list. If there is a tie, pick one randomly.
@@ -81,10 +55,23 @@ def find_city(user_id, user_cities, friends, user_city_info):
         elif n == max:
             arg.append(i)
     if len(arg) == 1:
-        return user_cities[arg[0]]
+        return (user_cities[arg[0]], 0)  # 0 means not randomly chosen.
     else:
-        # print arg, user_cities, nfriends
-        return user_cities[arg[np.random.randint(len(arg))]]
+        return (user_cities[arg[np.random.randint(len(arg))]], 1)
+            # 1 means the city is randomly chosen.
+
+"""
+def make_subnetwork(all_friends, user_city_int, city):
+    my_net = {}
+    for id1 in all_friends:
+        if id1 in user_city_int and user_city_int[id1] == city:
+            current_friends = []
+            for id2 in all_friends[id1]:
+                if id2 in user_city_int and user_city_int[id2] == city:
+                    current_friends.append(id2)
+            my_net[id1] = current_friends
+    return my_net
+"""
 
 
 def main():
@@ -103,67 +90,62 @@ def main():
         return
 
     # Read the network file (whole) and store the info in dict.
-    all_friends = {}
-    with open(network_filename, 'r') as f:
-        for line in f:
-            # For each line (csv format), find id's.
-            ids = map(int, line.strip().split(','))
-            # The first id will be a node, and following nodes are friends.
-            current_friends = []
-            for i, id in enumerate(ids):
-                if i:  # Exclude the first entry.
-                    current_friends.append(id)
-            all_friends[ids[0]] = current_friends
+    all_friends = read_dictlist_from_file(network_filename)
 
     # Find the cities by the user.
     cities_by_user = review_city_df.groupby('user_id_int', sort=True)\
         .business_city_int.unique()
-    # Initialize city info as -1.
-    user_city_int = -np.ones(len(cities_by_user))
+
+    # Initialize city info for all remaining users as a dict.
+    user_city_int = {}
+
     # We already know that only 5% of users have reviews in more than 1 city.
+
     # First, assign cities to 95% of users who have reviews in one city.
-    for user_id, user_cities in enumerate(cities_by_user):  # For all users.
+    for user_id, user_cities in cities_by_user.iteritems():  # For all users.
         if len(user_cities) == 1:
             user_city_int[user_id] = user_cities[0]
+
     # Second, for users with multiple cities, decide based on
     # friends of the network.
-    for user_id, user_cities in enumerate(cities_by_user):  # For all users.
-        #print 'a', user_id, user_cities
-        if len(user_cities) > 1:
-            user_city_int[user_id] = find_city(user_id, user_cities,
-                                               all_friends, user_city_int)
+    random_seed = 123
+    np.random.seed(random_seed)  # initializning the RNG.
+    n_random = 0  # Number of random choices.
+    for user_id, user_cities in cities_by_user.iteritems():  # For all users.
+        if user_id not in user_city_int:
+            (user_city_int[user_id], rand) = find_city(user_id, user_cities,
+                                                    all_friends, user_city_int)
+            n_random += rand
 
-    # Cities we are interested in: Phoenix, Las Vegas and Montreal, here.
-    cities = [0, 1, 3]
-    n_cities = len(cities)
+    # Write the user info into a file.
+    write_dict_to_file(user_by_city_filename, user_city_int)
 
-    # Find users for cities and store them in sets, save them in a pickle file.
-    users = [set(np.where(user_city_int == i)[0]) for i in cities]
-    print len(users[0]), len(users[1]), len(users[2])
-    with open(user_by_city_pickle_filename, 'wb') as f:
-        pickle.dump(users, f)
+    # Cities we are interested in: Phoenix (0), Las Vegas (1)
+    # and Montreal (3), here.
+    n_cities = 10
 
     # Using this info, find network for each cities.
     # We only considers edge belongs to a network if both end users
     # belong to the city.
-    friends = [{}] * n_cities
-    for i in range(n_cities):
+    for city in range(n_cities):
+        my_net = {}
         for id1 in all_friends:
-            if id1 in users[i]:
+            if id1 in user_city_int and user_city_int[id1] == city:
                 current_friends = []
                 for id2 in all_friends[id1]:
-                    if id2 in users[i]:
+                    if id2 in user_city_int and user_city_int[id2] == city:
                         current_friends.append(id2)
-                friends[i][id1] = current_friends
+                my_net[id1] = current_friends
         # Now it is time to save network data into csv files.
-        save_network_to_file(network_city_filename % cities[i], friends[i])
+        write_dictlist_to_file(network_city_filename % city, my_net)
 
-    # Find degrees and save degree info into files.
-    for i in range(n_cities):
+        # Find degrees and save degree info into files.
         degrees = {}
-        for id in friends[i]:
-            degrees[id] = len(friends[i][id])
-        save_degree_to_file(degree_filename % cities[i], degrees)
+        for id1 in my_net:
+            degrees[id1] = len(my_net[id1])
+        write_dict_to_file(degree_city_filename % city, degrees)
+
+    print "Number of random choices:", n_random
     return
 
 

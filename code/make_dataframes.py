@@ -2,7 +2,7 @@
 # Filename: make_joined_dataframe.py
 
 # by Suhan Ree
-# last edited on 06-15-2015
+# last edited on 06-17-2015
 
 import pandas as pd
 # import numpy as np
@@ -12,7 +12,7 @@ import cPickle as pickle
 from collections import Counter
 from sklearn.cluster import KMeans
 
-from my_utilities import read_json_file
+from my_utilities import read_json_file, find_id_map, write_dictlist_to_file
 
 # Filename for the pickled data of user_id and numbered id map.
 user_filename = '../data/yelp_academic_dataset_user.json'
@@ -20,37 +20,12 @@ user_pickle_filename = '../data/user_id_map.pkl'
 business_filename = '../data/yelp_academic_dataset_business.json'
 business_pickle_filename = '../data/business_id_map.pkl'
 review_filename = '../data/yelp_academic_dataset_review_notext.json'
+degree_filename = '../data/degrees'
 
 dataframes_pickle_filename = '../data/dataframes.pkl'
-review_dataframe_pickle_filename = '../data/review_dataframe%s.pkl'
-
-
-def find_id_map(data_json, id_label, pickle_filename):
-    """
-    Given the data and the pickled filename, find the id map.
-    If pickled file exists, it will read it from the file.
-    Input:
-        data_json: list of json objects from a json file.
-        id_label: string label for the id in json object.
-        pickle_filename: filename of the pickled file.
-    Output:
-        id_map: dictionary (key: string id, value: integer id)
-    """
-    id_map = {}  # empty dict.
-    if os.path.exists(pickle_filename):
-        print "Reading from the pickled data:", pickle_filename
-        with open(pickle_filename, 'r') as f:
-            id_map = pickle.load(f)
-    else:
-        id = 0
-        for one_data in data_json:
-            str_id = one_data[id_label]
-            if str_id not in id_map:
-                id_map[str_id] = id
-                id += 1
-        with open(pickle_filename, 'wb') as f:
-            pickle.dump(id_map, f)
-    return id_map
+reduced_dataframes_pickle_filename = '../data/reduced_dataframes.pkl'
+review_by_city_dataframe_pickle_filename = '../data/review_dataframe%s.pkl'
+categories_business_filename = '../data/categories_business'
 
 
 def main():
@@ -106,6 +81,9 @@ def main():
             for key in original_keys:
                 business.pop(key, None)
 
+        # Writing category info into a file.
+        write_dictlist_to_file(categories_business_filename, categories_map)
+
         # Convert the new list into the dataframe.
         business_df = pd.read_json(json.dumps(business_jsons))
         print "Done for businesses with %s businesses." % n_businesses
@@ -120,6 +98,7 @@ def main():
             review['business_id_int'] = business_id_map[review['business_id']]
             review['user_id_int'] = user_id_map[review['user_id']]
             review['review_stars'] = int(review['stars'])
+            review['review_date'] = review['date']
             # delete all other values not necessary here.
             for key in original_keys:
                 review.pop(key, None)
@@ -149,26 +128,50 @@ def main():
     #               'Edinburgh', 'Pittsburgh',  'Madison', 'Karlsruhe',
     #               'Urbana-Champaign', 'Waterloo']
 
+    # Here we drop all users without any friend.
+    # First, we need degree info already found.
+    my_degrees = pd.read_csv("../data/degrees",
+                             names=['user_id', 'degree'], header=None)
+
+    # A set containing users with at least one friend.
+    users2_set = set(my_degrees[my_degrees.degree > 0].user_id.values)
+
+    # Create all dataframes that only have data with users with at least one
+    # friend.
+    # First, find users first.
+    user_df2 = user_df[user_df.apply(lambda x: x['user_id_int'] in users2_set,
+                                     axis=1)]
+    # Second, find reviews done by these users.
+    review_df2 = review_df[review_df
+            .apply(lambda x: x['user_id_int'] in users2_set, axis=1)]
+    # Lastly, find businesses that only these reviews are done for.
+    businesses2_set = set(review_df2.business_id_int.unique())
+    business_df2 = business_df[business_df
+            .apply(lambda x: x['business_id_int'] in businesses2_set, axis=1)]
+
     # Dataframe with the reviews (with business city).
-    review_city_df = business_df[['business_id_int', 'business_city_int']]\
-        .merge(review_df, on=['business_id_int'], how='inner')
+    review_city_df2 = business_df2[['business_id_int', 'business_city_int']]\
+            .merge(review_df2, on=['business_id_int'], how='inner')
+
+    # Store reduced dataframes to pickle file.
+    with open(reduced_dataframes_pickle_filename, 'wb') as f:
+        pickle.dump((user_df2, business_df2, review_df2, review_city_df2), f)
+
     # Reviews for three specific cities.
-    review_phoenix = review_city_df[review_city_df.business_city_int == 0]\
-        .drop(['business_city_int'], axis=1)   # Phoenix
-    review_lasvegas = review_city_df[review_city_df.business_city_int == 1]\
-        .drop(['business_city_int'], axis=1)  # Las Vegas
-    review_montreal = review_city_df[review_city_df.business_city_int == 3]\
-        .drop(['business_city_int'], axis=1)  # Montreal
-    reviews = [review_phoenix, review_lasvegas, review_montreal]
+    cities = [0, 1, 3]  # for [Phoenix, Las Vegas, Montreal]
+    reviews = []
+    for i in cities:
+        reviews.append(review_city_df2[review_city_df2.business_city_int == i]
+            .drop(['business_city_int'], axis=1))
 
     # Store them in pickled files.
     # i=a:all, 0:Phoenix, 1:Las Vegas, 3:Montreal
-    cities = [0, 1, 3]
     for i in range(3):
-        with open(review_dataframe_pickle_filename % cities[i], 'wb') as f:
+        with open(review_by_city_dataframe_pickle_filename % cities[i], 'wb') \
+            as f:
             pickle.dump(reviews[i], f)
-    with open(review_dataframe_pickle_filename % 'a', 'wb') as f:
-        pickle.dump(review_city_df, f)
+    with open(review_by_city_dataframe_pickle_filename % 'a', 'wb') as f:
+        pickle.dump(review_city_df2, f)
     return
 
 
