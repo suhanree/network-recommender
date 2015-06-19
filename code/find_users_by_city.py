@@ -62,8 +62,62 @@ def find_city(user_id, user_cities, friends, user_city_int):
         return (user_cities[arg[np.random.randint(len(arg))]], 1)
             # 1 means the city is randomly chosen.
 
+
+#def main():
 """
-def make_subnetwork(all_friends, user_city_int, city):
+Find the users for each given city (save them in pickle files),
+and find build networks for given cities and degree distributions.
+"""
+if os.path.exists(review_by_city_dataframe_pickle_filename):
+    print "Reading from the pickled data: " + \
+        review_by_city_dataframe_pickle_filename
+    with open(review_by_city_dataframe_pickle_filename, 'r') as f:
+        review_city_df = pickle.load(f)
+else:
+    print "The file, " + review_by_city_dataframe_pickle_filename +\
+        ", does not exist."
+#    return
+
+# Read the network file (whole) and store the info in dict.
+all_friends = read_dictlist_from_file(network_filename)
+
+# Find the cities by the user.
+cities_by_user = review_city_df.groupby('user_id_int', sort=True)\
+    .business_city_int.unique()
+
+# Initialize city info for all remaining users as a dict.
+user_city_int = {}
+
+# We already know that only 5% of users have reviews in more than 1 city.
+
+# First, assign cities to 95% of users who have reviews in one city.
+for user_id, user_cities in cities_by_user.iteritems():  # For all users.
+    if len(user_cities) == 1:
+        user_city_int[user_id] = user_cities[0]
+
+# Second, for users with multiple cities, decide based on
+# friends of the network.
+random_seed = 123
+np.random.seed(random_seed)  # initializning the RNG.
+n_random = 0  # Number of random choices.
+for user_id, user_cities in cities_by_user.iteritems():  # For all users.
+    if user_id not in user_city_int:
+        (user_city_int[user_id], rand) = find_city(user_id, user_cities,
+                                                all_friends, user_city_int)
+        n_random += rand
+
+# Write the user info into a file.
+write_dict_to_file(user_by_city_filename, user_city_int)
+
+# Cities we are interested in: Phoenix (0), Las Vegas (1)
+# and Montreal (3), here.
+n_cities = 10
+
+# Using this info, find network for each cities.
+# We only considers edge belongs to a network if both end users
+# belong to the city.
+# Reviews of all cities will be created and saved here.
+for city in range(n_cities):
     my_net = {}
     for id1 in all_friends:
         if id1 in user_city_int and user_city_int[id1] == city:
@@ -72,96 +126,27 @@ def make_subnetwork(all_friends, user_city_int, city):
                 if id2 in user_city_int and user_city_int[id2] == city:
                     current_friends.append(id2)
             my_net[id1] = current_friends
-    return my_net
-"""
+    # Now it is time to save network data into csv files.
+    write_dictlist_to_file(network_city_filename % city, my_net)
 
+    # Find degrees and save degree info into files.
+    degrees = {}
+    for id1 in my_net:
+        degrees[id1] = len(my_net[id1])
+    write_dict_to_file(degree_city_filename % city, degrees)
 
-def main():
-    """
-    Find the users for each given city (save them in pickle files),
-    and find build networks for given cities and degree distributions.
-    """
-    if os.path.exists(review_by_city_dataframe_pickle_filename):
-        print "Reading from the pickled data: " + \
-            review_by_city_dataframe_pickle_filename
-        with open(review_by_city_dataframe_pickle_filename, 'r') as f:
-            review_city_df = pickle.load(f)
-    else:
-        print "The file, " + review_by_city_dataframe_pickle_filename +\
-            ", does not exist."
-        return
+    # Reviews for each city
+    # First removes businesses out of the city.
+    temp_df = review_city_df[review_city_df.business_city_int == city]\
+        .drop(['business_city_int'], axis=1)
+    # And then, remove users who are out of the city.
+    temp_df = temp_df[temp_df.apply(lambda x: user_city_int[x['user_id_int']]
+                                    == city, axis=1)]
+    # Store them in files.
+    write_ratings_to_file(review_by_city_filename % city, temp_df)
 
-    # Read the network file (whole) and store the info in dict.
-    all_friends = read_dictlist_from_file(network_filename)
-
-    # Find the cities by the user.
-    cities_by_user = review_city_df.groupby('user_id_int', sort=True)\
-        .business_city_int.unique()
-
-    # Initialize city info for all remaining users as a dict.
-    user_city_int = {}
-
-    # We already know that only 5% of users have reviews in more than 1 city.
-
-    # First, assign cities to 95% of users who have reviews in one city.
-    for user_id, user_cities in cities_by_user.iteritems():  # For all users.
-        if len(user_cities) == 1:
-            user_city_int[user_id] = user_cities[0]
-
-    # Second, for users with multiple cities, decide based on
-    # friends of the network.
-    random_seed = 123
-    np.random.seed(random_seed)  # initializning the RNG.
-    n_random = 0  # Number of random choices.
-    for user_id, user_cities in cities_by_user.iteritems():  # For all users.
-        if user_id not in user_city_int:
-            (user_city_int[user_id], rand) = find_city(user_id, user_cities,
-                                                    all_friends, user_city_int)
-            n_random += rand
-
-    # Write the user info into a file.
-    write_dict_to_file(user_by_city_filename, user_city_int)
-
-    # Cities we are interested in: Phoenix (0), Las Vegas (1)
-    # and Montreal (3), here.
-    n_cities = 10
-
-    # Using this info, find network for each cities.
-    # We only considers edge belongs to a network if both end users
-    # belong to the city.
-    # Reviews of all cities will be created here.
-    reviews = []
-    for city in range(n_cities):
-        my_net = {}
-        for id1 in all_friends:
-            if id1 in user_city_int and user_city_int[id1] == city:
-                current_friends = []
-                for id2 in all_friends[id1]:
-                    if id2 in user_city_int and user_city_int[id2] == city:
-                        current_friends.append(id2)
-                my_net[id1] = current_friends
-        # Now it is time to save network data into csv files.
-        write_dictlist_to_file(network_city_filename % city, my_net)
-
-        # Find degrees and save degree info into files.
-        degrees = {}
-        for id1 in my_net:
-            degrees[id1] = len(my_net[id1])
-        write_dict_to_file(degree_city_filename % city, degrees)
-
-        # Reviews for each city
-        # First removes businesses out of the city.
-        temp_df = review_city_df[review_city_df.business_city_int == city]\
-            .drop(['business_city_int'], axis=1)
-        # And then, removes users out of the city.
-        temp_df[temp_df.apply(lambda x: user_city_int[x['user_id_int']] == city,
-                              axis=1)]
-        reviews.append(temp_df)
-        # Store them in files.
-        write_ratings_to_file(review_by_city_filename % city, reviews[-1])
-
-    print "Number of random choices:", n_random
-    return
+print "Number of random choices:", n_random
+#return
 
 
 if __name__ == '__main__':
