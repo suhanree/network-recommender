@@ -24,8 +24,9 @@ degree_filename = '../data/degrees'
 
 dataframes_pickle_filename = '../data/dataframes.pkl'
 reduced_dataframes_pickle_filename = '../data/reduced_dataframes.pkl'
-review_by_city_dataframe_pickle_filename = '../data/review_dataframe%s.pkl'
 categories_business_filename = '../data/categories_business'
+review_by_city_dataframe_pickle_filename =\
+    '../data/review_by_city_dataframe.pkl'
 
 
 def main():
@@ -156,22 +157,9 @@ def main():
     # Store reduced dataframes to pickle file.
     with open(reduced_dataframes_pickle_filename, 'wb') as f:
         pickle.dump((user_df2, business_df2, review_df2, review_city_df2), f)
-
-    # Reviews for three specific cities.
-    cities = [0, 1, 3]  # for [Phoenix, Las Vegas, Montreal]
-    reviews = []
-    for i in cities:
-        reviews.append(review_city_df2[review_city_df2.business_city_int == i]
-            .drop(['business_city_int'], axis=1))
-
-    # Store them in pickled files.
-    # i=a:all, 0:Phoenix, 1:Las Vegas, 3:Montreal
-    for i in range(3):
-        with open(review_by_city_dataframe_pickle_filename % cities[i], 'wb') \
-            as f:
-            pickle.dump(reviews[i], f)
-    with open(review_by_city_dataframe_pickle_filename % 'a', 'wb') as f:
+    with open(review_by_city_dataframe_pickle_filename, 'wb') as f:
         pickle.dump(review_city_df2, f)
+
     return
 
 

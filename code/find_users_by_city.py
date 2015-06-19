@@ -11,16 +11,18 @@ import os
 import cPickle as pickle
 
 from my_utilities import write_dictlist_to_file, write_dict_to_file
-from my_utilities import read_dictlist_from_file
+from my_utilities import read_dictlist_from_file, write_ratings_to_file
 
 # Filename for the pickled data of reviews with city info.
-review_city_dataframe_pickle_filename = '../data/review_dataframea.pkl'
+review_by_city_dataframe_pickle_filename =\
+    '../data/review_by_city_dataframe.pkl'
 network_filename = '../data/network.csv'
 degree_filename = '../data/network.csv'
 
 user_by_city_filename = '../data/user_by_city'
 network_city_filename = '../data/network%s.csv'
 degree_city_filename = '../data/degrees%s'
+review_by_city_filename = '../data/reviews%s'
 
 
 def find_city(user_id, user_cities, friends, user_city_int):
@@ -79,13 +81,13 @@ def main():
     Find the users for each given city (save them in pickle files),
     and find build networks for given cities and degree distributions.
     """
-    if os.path.exists(review_city_dataframe_pickle_filename):
+    if os.path.exists(review_by_city_dataframe_pickle_filename):
         print "Reading from the pickled data: " + \
-            review_city_dataframe_pickle_filename
-        with open(review_city_dataframe_pickle_filename, 'r') as f:
+            review_by_city_dataframe_pickle_filename
+        with open(review_by_city_dataframe_pickle_filename, 'r') as f:
             review_city_df = pickle.load(f)
     else:
-        print "The file, " + review_city_dataframe_pickle_filename +\
+        print "The file, " + review_by_city_dataframe_pickle_filename +\
             ", does not exist."
         return
 
@@ -127,6 +129,8 @@ def main():
     # Using this info, find network for each cities.
     # We only considers edge belongs to a network if both end users
     # belong to the city.
+    # Reviews of all cities will be created here.
+    reviews = []
     for city in range(n_cities):
         my_net = {}
         for id1 in all_friends:
@@ -144,6 +148,17 @@ def main():
         for id1 in my_net:
             degrees[id1] = len(my_net[id1])
         write_dict_to_file(degree_city_filename % city, degrees)
+
+        # Reviews for each city
+        # First removes businesses out of the city.
+        temp_df = review_city_df[review_city_df.business_city_int == city]\
+            .drop(['business_city_int'], axis=1)
+        # And then, removes users out of the city.
+        temp_df[temp_df.apply(lambda x: user_city_int[x['user_id_int']] == city,
+                              axis=1)]
+        reviews.append(temp_df)
+        # Store them in files.
+        write_ratings_to_file(review_by_city_filename % city, reviews[-1])
 
     print "Number of random choices:", n_random
     return

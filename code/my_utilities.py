@@ -124,3 +124,21 @@ def write_dict_to_file(filename, my_dict, separator=','):
         for user_id in my_dict:
             f.write(str(user_id) + separator + str(my_dict[user_id]) + '\n')
     return
+
+
+def write_ratings_to_file(filename, review_df, separator=','):
+    """
+    Write ratings data to a file.
+    Input:
+        filename: name of the file.
+        review_df: pandas dataframe that contains ratings data.
+        separator: character that separates columns.
+    Output:
+        None
+    """
+    with open(filename, 'w') as f:
+        for index, row in review_df.iterrows():
+            f.write(str(row['user_id_int']) + separator +
+                    str(row['business_id_int']) + separator +
+                    str(row['review_stars']) + '\n')
+    return
