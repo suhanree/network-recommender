@@ -94,6 +94,7 @@ class Validator():
                     else:  # Outside fold.
                         self.list_ratings_rest[j][uu, ii] = rating
             count += 1
+        """
         print self.users_id_map
         print self.items_id_map
         print 'test', self.ratings_test
@@ -101,6 +102,7 @@ class Validator():
         for i in range(self.k):
             print 'val', self.list_ratings_val[i]
             print 'rest', self.list_ratings_rest[i]
+        """
         return
 
 
@@ -144,28 +146,29 @@ class Validator():
         Output:
             rmse: float
         """
-        mat = ratings
+        mat = ratings.tocoo()  # coo format is know to be faster when looping.
         squared_sum = 0
-        count = len(ratings.row)
+        count = len(mat.row)
         # Loop over non-zero values
-        for i, j, val in itertools.izip(mat.row, mat.col, mat.data):
-            squared_sum += (mat[i, j] -
-                            recommender.pred_one_rating(i, j))**2
+        for irow, icol, val in itertools.izip(mat.row, mat.col, mat.data):
+            squared_sum += (val - recommender.pred_one_rating(irow, icol))**2
+            #print irow, icol, val, recommender.pred_one_rating(irow, icol)
         return np.sqrt(squared_sum/count)
 
 
 def main():
     # Read the the ratings data from a file, and store them in matrices.
-    #ratings_filename = "../data/reviews" + sys.argv[1]
-    ratings_filename = "../data/sample_ratings"
+    ratings_filename = "../data/reviews" + sys.argv[1]
+    #ratings_filename = "../data/sample_ratings"
     network_filename = "../data/network" + sys.argv[1]
     # k: number of folds for cross validation.
-    k = 2
+    k = 5
     val = Validator(ratings_filename, network_filename, k, 0.2)
 
     # Creating an object for my model
-    my_rec = MatrixFactorization(n_features = 3,\
-                            item_bias_correction=True, saving_matrices=False)
+    my_rec = MatrixFactorization(n_features = 10,
+                                 user_bias_correction=False,
+                                 item_bias_correction=False)
 
     #my_meta_predictor = MetaPredictor(my_mf_rec_engine, my_pop_rec_engine,\
     #    criteria=5)
