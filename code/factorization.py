@@ -15,8 +15,8 @@ class MatrixFactorization():
     RMSE when factoriziing.
     """
     def __init__(self, n_features=8, learn_rate=0.005,
-                 optimizer_pct_improvement_criterion=2,
                  regularization_param=0.02,
+                 optimizer_pct_improvement_criterion=3,
                  user_bias_correction=False,
                  item_bias_correction=False,
                  saving_matrices=False,
@@ -27,8 +27,8 @@ class MatrixFactorization():
             n_features: number of latent features to use (model parameter)
             learn_rate: learning rate for Stochastic Gradient Descent
                         (model parameter)
-            optimizer_pct_improvement_criterion: for SGD (model parameter)
             regularization_param: for regularization (model parameter)
+            optimizer_pct_improvement_criterion: for SGD (model parameter)
 
             user_bias_correction: (default: False)
             item_bias_correction: (default: False)
@@ -65,32 +65,35 @@ class MatrixFactorization():
                           # coo is better for looping over nonzero values.
         self.n_users, self.n_items = ratings_mat.shape
         self.n_rated = ratings_mat_coo.row.size
+        print "    problem size:", self.n_users, self.n_items, self.n_rated
 
         # user bias subtraction done here
-        if self.item_bias_correction:
-            self.average_ratings_item = np.zeros(self.n_items)
-            for icol in xrange(self.n_items):
-                nonzero_indices = (ratings_mat_coo.col == icol)
-                if np.any(nonzero_indices):
-                    self.average_ratings_item[icol] =\
-                        ratings_mat_coo.data[nonzero_indices].mean()
-                else: self.average_ratings_item[icol] = 0
-            for irow, icol in itertools.izip(ratings_mat_coo.row,
-                                             ratings_mat_coo.col):
-                self.ratings_mat[irow, icol] -= self.average_ratings_item[icol]
-
-        # item bias subtraction done here
         if self.user_bias_correction:
             self.average_ratings_user = np.zeros(self.n_users)
             for irow in xrange(self.n_users):
-                nonzero_indices = (self.ratings_mat.row == irow)
-                if np.any(nonzero_indices):
+                nonzero_indices = np.where(ratings_mat_coo.row == irow)[0]
+                if nonzero_indices.size:  # With at least one review
                     self.average_ratings_user[irow] =\
                         ratings_mat_coo.data[nonzero_indices].mean()
                 else: self.average_ratings_user[irow] = 0
             for irow, icol in itertools.izip(ratings_mat_coo.row,
                                              ratings_mat_coo.col):
                 self.ratings_mat[irow, icol] -= self.average_ratings_user[irow]
+        print "    User biases subtracted"
+
+        # item bias subtraction done here
+        if self.item_bias_correction:
+            self.average_ratings_item = np.zeros(self.n_items)
+            for icol in xrange(self.n_items):
+                nonzero_indices = np.where(ratings_mat_coo.col == icol)[0]
+                if nonzero_indices.size:  # With at least one review
+                    self.average_ratings_item[icol] =\
+                        ratings_mat_coo.data[nonzero_indices].mean()
+                else: self.average_ratings_item[icol] = 0
+            for irow, icol in itertools.izip(ratings_mat_coo.row,
+                                             ratings_mat_coo.col):
+                self.ratings_mat[irow, icol] -= self.average_ratings_item[icol]
+        print "    Item biases subtracted"
 
         # Initializing u and v  (they are not sparse)
         self.user_mat = np.matrix(
@@ -99,11 +102,12 @@ class MatrixFactorization():
         self.item_mat = np.matrix(
             np.random.rand(self.n_items * self.n_features)\
             .reshape([self.n_features, self.n_items]))
+
         optimizer_iteration_count = 0
         pct_improvement = 0
         sse_accum = 0
-        print("Optimizaiton Statistics")
-        print("Iterations | Mean Squared Error  |  Percent Improvement")
+        print("    Optimizaiton Statistics")
+        print("    Iterations | Mean Squared Error  |  Percent Improvement")
         while ((optimizer_iteration_count < 2) or
                (pct_improvement > self.optimizer_pct_improvement_criterion)):
             old_sse = sse_accum
@@ -121,11 +125,12 @@ class MatrixFactorization():
                         self.user_mat[irow, k] - self.regularization_param\
                         * self.item_mat[k, icol])
             pct_improvement = 100 * (old_sse - sse_accum) / old_sse
-            print("%d \t\t %f \t\t %f" % (
+            print("    %d \t\t %f \t\t %f" % (
                 optimizer_iteration_count, sse_accum /\
                 self.n_rated, pct_improvement))
             old_sse = sse_accum
             optimizer_iteration_count += 1
+
         # prediction matrix (not sparse)
         self.prediction = np.dot(self.user_mat, self.item_mat)
 
@@ -154,7 +159,7 @@ class MatrixFactorization():
         if self.prediction is None:
             self.prediction = np.dot(self.user_mat, self.item_mat)
         if report_run_time:
-            print("Execution time: %f seconds" % (time()-start_time))
+            print("    Execution time: %f seconds" % (time()-start_time))
         return self.prediction[user_id]
 
 
@@ -163,7 +168,7 @@ class MatrixFactorization():
         if self.prediction is None:
             self.prediction = np.dot(self.user_mat, self.item_mat)
         if report_run_time:
-            print("Execution time: %f seconds" % (time()-start_time))
+            print("    Execution time: %f seconds" % (time()-start_time))
         return self.prediction
 
 

@@ -9,6 +9,7 @@ import json
 import csv
 import os
 import cPickle as pickle
+import networkx as nx
 
 
 def read_json_file(filename):
@@ -142,3 +143,22 @@ def write_ratings_to_file(filename, review_df, separator=','):
                     str(row['business_id_int']) + separator +
                     str(row['review_stars']) + '\n')
     return
+
+
+def convert_to_nx(graph_dict):
+    """
+    Converting a graph object from dict of lists to networkx object.
+    Input:
+        graph_dict: graph as dict of lists.
+    Output:
+        graph_nx: graph as networkx object.
+    """
+    graph_nx = nx.Graph()
+    # Adding nodes.
+    graph_nx.add_nodes_from(graph_dict.keys())
+    # Adding edges.
+    for node in graph_dict:
+        for friend in graph_dict[node]:
+            if node < friend:
+                graph_nx.add_edge(node, friend)
+    return graph_nx

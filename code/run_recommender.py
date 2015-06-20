@@ -17,8 +17,9 @@ class Validator():
     """
     def __init__(self, ratings_filename, network_filename, k=5, test_ratio=None):
         """
-        Constructor for class Validation,
-        It will read the ratings information from the file.
+        Constructor for Validator class.
+        It will read the ratings information from the file
+        and save it to a sparse matrix (dok format).
         Input:
             ratings_filename: filename for ratings.
             network_filename: filename for network.
@@ -40,7 +41,6 @@ class Validator():
         # list_ratings_training: list of ratings for training (determined by k)
         u_size = ratings_contents.user_id.nunique()
         i_size = ratings_contents.item_id.nunique()
-        print u_size, i_size
         self.ratings_train = sparse.dok_matrix((u_size, i_size))
         self.ratings_test = sparse.dok_matrix((u_size, i_size))
         self.list_ratings_val = []
@@ -119,6 +119,7 @@ class Validator():
         # Perform k-fold validation k times.
         list_rmse = []
         for i in range(self.k):
+            print "Validation set", i, "started."
             recommender.fit(self.list_ratings_rest[i])
             list_rmse.append(self.find_rmse(recommender,
                                             self.list_ratings_val[i]))
@@ -127,7 +128,7 @@ class Validator():
 
     def find_test_rmse(self, recommender):
         """
-        Find the RMSE for the test test.
+        Find the RMSE for the test set
         Input:
             recommender: fitted model.
         Output
@@ -157,6 +158,9 @@ class Validator():
 
 
 def main():
+    """
+    To run the recommender model.
+    """
     # Read the the ratings data from a file, and store them in matrices.
     ratings_filename = "../data/reviews" + sys.argv[1]
     #ratings_filename = "../data/sample_ratings"
@@ -166,21 +170,28 @@ def main():
     val = Validator(ratings_filename, network_filename, k, 0.2)
 
     # Creating an object for my model
-    my_rec = MatrixFactorization(n_features = 10,
-                                 user_bias_correction=False,
-                                 item_bias_correction=False)
+    nfeat = int(sys.argv[2])
+    for lrate in [0.001, 0.005, 0.01]:
+        for rparam in [0.01, 0.05, 0.1]:
+            my_rec = MatrixFactorization(n_features = nfeat,
+                                learn_rate = lrate,
+                                regularization_param = rparam,
+                                user_bias_correction = True,
+                                item_bias_correction = True)
+            val_results = val.validate(my_rec)
+            print 'validation results: '
+            print nfeat, lrate, rparam, val_results, np.mean(val_results)
 
     #my_meta_predictor = MetaPredictor(my_mf_rec_engine, my_pop_rec_engine,\
     #    criteria=5)
     #my_meta_predictor.fit(ratings_mat)
 
-    val_results = val.validate(my_rec)
-    print 'validation results: ', val_results
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print "Usage: python run_recommender.py 0"
+    if len(sys.argv) != 3:
+        print "Usage: python run_recommender.py 0 8"
         print "     0 is a city number (0: Phoenix, 1: Las Vegas, 3: Montreal)"
+        print "     8 is n_feature, the number of latent features"
         sys.exit()
     main()
