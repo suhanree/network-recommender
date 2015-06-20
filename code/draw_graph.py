@@ -7,6 +7,8 @@
 import numpy as np
 import matplotlib
 from graph_tool.all import *
+import os
+import cPickle as pickle
 
 from my_utilities import read_dictlist_from_file, read_dict_from_file
 
@@ -14,6 +16,7 @@ from my_utilities import read_dictlist_from_file, read_dict_from_file
 network_filename = '../data/networkr.csv'
 user_by_city_filename = '../data/user_by_city'
 
+pos_pickle_filename = '../data/positions.pkl'
 
 def read_file(network_filename, user_by_city_filename=None):
     """
@@ -62,9 +65,16 @@ def main():
     gg = read_file(network_filename, user_by_city_filename)
     city = gg.vertex_properties["city_prop"]
 
-    pos = sfdp_layout(gg, groups=city)
-    print "Done calculating positions."
-    graph_draw(g, pos, output_size=(1000, 1000), vertex_color=[1,1,1,0],
+    if os.path.exists(pos_pickle_filename):
+        with open(pos_pickle_filename, 'r') as f:
+            pos = pickle.load(f)
+        print "Read the position info from pickled file."
+    else:
+        pos = sfdp_layout(gg, groups=city)
+        with open(pos_pickle_filename, 'wb') as f:
+            pickle.dump(pos, f)
+        print "Done calculating positions."
+    graph_draw(gg, pos, output_size=(1000, 1000), vertex_color=[1,1,1,0],
                 vertex_fill_color=city, vertex_size=1, edge_pen_width=1.2,
                 vcmap=matplotlib.cm.gist_heat_r, output="whole_network.png")
     return
