@@ -15,3 +15,7 @@ This is my capstone project at Galvanize.
 
 3. Social Recommender Systems, by Bornali Borah, Priyanka Konwar, and Gypsy Nandi,
     I3CS’15 (2015).
+
+4. Tiago P. Peixoto, “The graph-tool python library”,
+   [figshare](http://figshare.com/articles/graph_tool/1164194). DOI:
+   10.6084/m9.figshare.1164194 (2014).

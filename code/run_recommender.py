@@ -150,6 +150,8 @@ class Validator():
         mat = ratings.tocoo()  # coo format is know to be faster when looping.
         squared_sum = 0
         count = len(mat.row)
+        if count == 0:
+            return 0
         # Loop over non-zero values
         for irow, icol, val in itertools.izip(mat.row, mat.col, mat.data):
             squared_sum += (val - recommender.pred_one_rating(irow, icol))**2
@@ -167,15 +169,16 @@ def main():
     network_filename = "../data/network" + sys.argv[1]
     # k: number of folds for cross validation.
     k = 5
-    val = Validator(ratings_filename, network_filename, k, 0.2)
+    val = Validator(ratings_filename, network_filename, k, 0.1)
 
     # Creating an object for my model
     nfeat = int(sys.argv[2])
-    for lrate in [0.001, 0.005, 0.01]:
-        for rparam in [0.01, 0.05, 0.1]:
+    for lrate in [0.005]:
+        for rparam in [0.1, 0.3, 0.5]:
             my_rec = MatrixFactorization(n_features = nfeat,
                                 learn_rate = lrate,
                                 regularization_param = rparam,
+                                optimizer_pct_improvement_criterion=3,
                                 user_bias_correction = True,
                                 item_bias_correction = True)
             val_results = val.validate(my_rec)

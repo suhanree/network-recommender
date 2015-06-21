@@ -67,6 +67,12 @@ class MatrixFactorization():
         self.n_rated = ratings_mat_coo.row.size
         print "    problem size:", self.n_users, self.n_items, self.n_rated
 
+        # Subtract the overall average rating from ratings_mat.
+        average_rating = ratings_mat_coo.data.mean()
+        for irow, icol in itertools.izip(ratings_mat_coo.row,
+                                         ratings_mat_coo.col):
+            self.ratings_mat[irow, icol] -= average_rating
+
         # user bias subtraction done here
         if self.user_bias_correction:
             self.average_ratings_user = np.zeros(self.n_users)
@@ -74,12 +80,13 @@ class MatrixFactorization():
                 nonzero_indices = np.where(ratings_mat_coo.row == irow)[0]
                 if nonzero_indices.size:  # With at least one review
                     self.average_ratings_user[irow] =\
-                        ratings_mat_coo.data[nonzero_indices].mean()
+                        ratings_mat_coo.data[nonzero_indices].mean()\
+                        - average_rating
                 else: self.average_ratings_user[irow] = 0
             for irow, icol in itertools.izip(ratings_mat_coo.row,
                                              ratings_mat_coo.col):
                 self.ratings_mat[irow, icol] -= self.average_ratings_user[irow]
-        print "    User biases subtracted"
+            print "    User biases subtracted"
 
         # item bias subtraction done here
         if self.item_bias_correction:
@@ -88,21 +95,23 @@ class MatrixFactorization():
                 nonzero_indices = np.where(ratings_mat_coo.col == icol)[0]
                 if nonzero_indices.size:  # With at least one review
                     self.average_ratings_item[icol] =\
-                        ratings_mat_coo.data[nonzero_indices].mean()
+                        ratings_mat_coo.data[nonzero_indices].mean()\
+                        - average_rating
                 else: self.average_ratings_item[icol] = 0
             for irow, icol in itertools.izip(ratings_mat_coo.row,
                                              ratings_mat_coo.col):
                 self.ratings_mat[irow, icol] -= self.average_ratings_item[icol]
-        print "    Item biases subtracted"
+            print "    Item biases subtracted"
 
         # Initializing u and v  (they are not sparse)
-        self.user_mat = np.matrix(
+        self.user_mat = 2 * np.matrix(
             np.random.rand(self.n_users * self.n_features)\
-            .reshape([self.n_users, self.n_features]))
-        self.item_mat = np.matrix(
+            .reshape([self.n_users, self.n_features])) - 1
+        self.item_mat = 2 * np.matrix(
             np.random.rand(self.n_items * self.n_features)\
-            .reshape([self.n_features, self.n_items]))
+            .reshape([self.n_features, self.n_items])) - 1
 
+        # Iteration starts here.
         optimizer_iteration_count = 0
         pct_improvement = 0
         sse_accum = 0
@@ -133,6 +142,11 @@ class MatrixFactorization():
 
         # prediction matrix (not sparse)
         self.prediction = np.dot(self.user_mat, self.item_mat)
+
+        # average rating added.
+        for irow, icol in itertools.izip(ratings_mat_coo.row,
+                                         ratings_mat_coo.col):
+            self.ratings_mat[irow, icol] = average_rating
 
         # Adding back baises subtracted before finding u and v
         if self.user_bias_correction:
