@@ -175,14 +175,15 @@ def main():
 
     # Creating an object for my model
     nfeat = int(sys.argv[2])
+    if_bias = bool(sys.argv[3])
     for lrate in [0.003, 0.007]:
         for rparam in [0.3, 0.5, 0.7]:
             my_rec = MatrixFactorization(n_features = nfeat,
                                 learn_rate = lrate,
                                 regularization_param = rparam,
                                 optimizer_pct_improvement_criterion=3,
-                                user_bias_correction = True,
-                                item_bias_correction = True)
+                                user_bias_correction = if_bias,
+                                item_bias_correction = if_bias)
             val_results = val.validate(my_rec)
             print 'validation results: '
             print nfeat, lrate, rparam, val_results, np.mean(val_results)
@@ -194,9 +195,10 @@ def main():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print "Usage: python run_recommender.py 0 8"
+    if len(sys.argv) != 4:
+        print "Usage: python run_recommender.py 0 8 1"
         print "     0 is a city number (0: Phoenix, 1: Las Vegas, 3: Montreal)"
         print "     8 is n_feature, the number of latent features"
+        print "     1 if bias (user and item) is considered, 0 otherwise"
         sys.exit()
     main()

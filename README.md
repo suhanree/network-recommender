@@ -17,7 +17,7 @@ This is my capstone project at Galvanize.
     I3CS’15 (2015).
 
 4. “The graph-tool python library”, by Tiago P. Peixoto, 
-   (figshare)[http://figshare.com/articles/graph_tool/1164194]. DOI:
+   [figshare](http://figshare.com/articles/graph_tool/1164194). DOI:
    10.6084/m9.figshare.1164194 (2014).
 
-5. Mining of Massive Datasets, by Jure Leskovec, Anand Rajaraman, and Jeffrey D. Ullman, (http://infolab.stanford.edu/~ullman/mmds/book.pdf)[http://infolab.stanford.edu/~ullman/mmds/book.pdf] (2014). 
+5. Mining of Massive Datasets, by Jure Leskovec, Anand Rajaraman, and Jeffrey D. Ullman, [http://infolab.stanford.edu/~ullman/mmds/book.pdf](http://infolab.stanford.edu/~ullman/mmds/book.pdf) (2014). 

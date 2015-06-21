@@ -1,4 +1,4 @@
 data/
-code/*.pyc
-code/.ropeproject/
-run/
+**/*.py[cod]
+**/.ropeproject
+run*/

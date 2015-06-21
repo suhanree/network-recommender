@@ -72,7 +72,6 @@ class MatrixFactorization():
         for irow, icol in itertools.izip(ratings_mat_coo.row,
                                          ratings_mat_coo.col):
             self.ratings_mat[irow, icol] -= average_rating
-        print self.ratings_mat
 
         # user bias subtraction done here
         if self.user_bias_correction:
