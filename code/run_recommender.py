@@ -121,6 +121,7 @@ class Validator():
         for i in range(self.k):
             print "Validation set", i, "started."
             recommender.fit(self.list_ratings_rest[i])
+            #print 'v', self.list_ratings_val[i]
             list_rmse.append(self.find_rmse(recommender,
                                             self.list_ratings_val[i]))
         return list_rmse
@@ -154,6 +155,7 @@ class Validator():
             return 0
         # Loop over non-zero values
         for irow, icol, val in itertools.izip(mat.row, mat.col, mat.data):
+            #print irow, icol, val, recommender.pred_one_rating(irow, icol)
             squared_sum += (val - recommender.pred_one_rating(irow, icol))**2
             #print irow, icol, val, recommender.pred_one_rating(irow, icol)
         return np.sqrt(squared_sum/count)
@@ -173,8 +175,8 @@ def main():
 
     # Creating an object for my model
     nfeat = int(sys.argv[2])
-    for lrate in [0.005]:
-        for rparam in [0.1, 0.3, 0.5]:
+    for lrate in [0.003, 0.007]:
+        for rparam in [0.3, 0.5, 0.7]:
             my_rec = MatrixFactorization(n_features = nfeat,
                                 learn_rate = lrate,
                                 regularization_param = rparam,

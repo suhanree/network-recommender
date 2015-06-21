@@ -72,6 +72,7 @@ class MatrixFactorization():
         for irow, icol in itertools.izip(ratings_mat_coo.row,
                                          ratings_mat_coo.col):
             self.ratings_mat[irow, icol] -= average_rating
+        print self.ratings_mat
 
         # user bias subtraction done here
         if self.user_bias_correction:
@@ -115,8 +116,8 @@ class MatrixFactorization():
         optimizer_iteration_count = 0
         pct_improvement = 0
         sse_accum = 0
-        print("    Optimizaiton Statistics")
-        print("    Iterations | Mean Squared Error  |  Percent Improvement")
+        #print("    Optimizaiton Statistics")
+        #print("    Iterations | Mean Squared Error  |  Percent Improvement")
         while ((optimizer_iteration_count < 2) or
                (pct_improvement > self.optimizer_pct_improvement_criterion)):
             old_sse = sse_accum
@@ -134,19 +135,18 @@ class MatrixFactorization():
                         self.user_mat[irow, k] - self.regularization_param\
                         * self.item_mat[k, icol])
             pct_improvement = 100 * (old_sse - sse_accum) / old_sse
-            print("    %d \t\t %f \t\t %f" % (
-                optimizer_iteration_count, sse_accum /\
-                self.n_rated, pct_improvement))
+            #print("    %d \t\t %f \t\t %f" % (
+            #    optimizer_iteration_count, sse_accum /\
+            #    self.n_rated, pct_improvement))
             old_sse = sse_accum
             optimizer_iteration_count += 1
+        print "    Iteration done in", optimizer_iteration_count, "times."
 
         # prediction matrix (not sparse)
         self.prediction = np.dot(self.user_mat, self.item_mat)
 
         # average rating added.
-        for irow, icol in itertools.izip(ratings_mat_coo.row,
-                                         ratings_mat_coo.col):
-            self.ratings_mat[irow, icol] = average_rating
+        self.prediction += average_rating
 
         # Adding back baises subtracted before finding u and v
         if self.user_bias_correction:
@@ -160,36 +160,32 @@ class MatrixFactorization():
         if self.saving_matrices:
             self.user_mat.dump(filename_u)
             self.item_mat.dump(filename_v)
-        #print("Fitting of latent feature matrices completed")
-
 
     def pred_one_rating(self, user_id, item_id):
-        #print self.user_mat[user_id].shape, self.item_mat[:,item_id].shape
-        return np.dot(self.user_mat[user_id], self.item_mat[:,item_id])[0, 0]
+        """
+        Predict for one user-item pair
+        """
+        return self.prediction[user_id, item_id]
 
 
     def pred_one_user(self, user_id, report_run_time=False):
-        start_time = time()
-        if self.prediction is None:
-            self.prediction = np.dot(self.user_mat, self.item_mat)
-        if report_run_time:
-            print("    Execution time: %f seconds" % (time()-start_time))
+        """
+        Predict for one user.
+        """
         return self.prediction[user_id]
 
 
-    def pred_all_users(self, report_run_time=False):
-        start_time = time()
-        if self.prediction is None:
-            self.prediction = np.dot(self.user_mat, self.item_mat)
-        if report_run_time:
-            print("    Execution time: %f seconds" % (time()-start_time))
+    def pred_all(self, report_run_time=False):
+        """
+        Predict for all user-item pairs.
+        """
         return self.prediction
 
 
-    def top_n_recs2(self, user_id, num):
+    def top_n_recs(self, user_id, num):
         pred_output = self.pred_one_user(user_id).reshape(1, self.n_items)
         items_not_rated_by_this_user = \
-        ~(self.ratings_mat[user_id] > 0).todense().reshape(1, self.n_items)
+            ~(self.ratings_mat[user_id] > 0).todense().reshape(1, self.n_items)
         return np.argsort(pred_output[items_not_rated_by_this_user])\
             [-num:][::-1]
 
