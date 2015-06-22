@@ -162,3 +162,19 @@ def convert_to_nx(graph_dict):
             if node < friend:
                 graph_nx.add_edge(node, friend)
     return graph_nx
+
+
+def convert_from_nx(graph_nx):
+    """
+    Converting a graph object from networkx object to a dict of lists
+    Input:
+        graph_nx: graph as networkx object.
+    Output:
+        graph_dict: graph as dict of lists.
+    """
+    graph_dict = {}
+    for node in graph_nx.nodes_iter():
+        graph_dict[node] = []
+        for friend in graph_nx.neighbors(node):
+            graph_dict[node].append(friend)
+    return graph_dict

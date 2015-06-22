@@ -13,7 +13,7 @@ import networkx as nx
 
 from my_utilities import write_dictlist_to_file, write_dict_to_file
 from my_utilities import read_dictlist_from_file, write_ratings_to_file
-from my_utilities import convert_to_nx
+from my_utilities import convert_to_nx, convert_from_nx
 
 # Filename for the pickled data of reviews with city info.
 review_by_city_dataframe_pickle_filename =\
@@ -127,16 +127,25 @@ def main():
                 for id2 in all_friends[id1]:
                     if id2 in user_city_int and user_city_int[id2] == city:
                         current_friends.append(id2)
-                if len(current_friends) > 0:  # Only add users with friend in city
+                if len(current_friends) > 0:
+                    # Only add users with friend in city
                     my_net[id1] = current_friends
 
         # Using networkx, find the largest component and only keep users in it.
         graph_nx = convert_to_nx(my_net)
-        user_with_friend = set(sorted(nx.connected_components(graph_nx),
-                                    key=len, reverse=True)[0])
+        components = nx.connected_component_subgraphs(graph_nx)
+        # Find the biggest subgraph.
+        biggest_subgraph = None
+        max_size = 0
+        for comp in components:
+            if comp.number_of_nodes() > max_size:
+                max_size = comp.number_of_nodes()
+                biggest_subgraph = comp
+        user_with_friend = set(biggest_subgraph.nodes())
 
         # Now it is time to save network data into csv files.
-        write_dictlist_to_file(network_city_filename % city, my_net)
+        write_dictlist_to_file(network_city_filename % city,
+                               convert_from_nx(biggest_subgraph))
 
         # Find degrees and save degree info into files.
         degrees = {}
