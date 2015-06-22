@@ -198,13 +198,11 @@ class MatrixFactorization():
             recom: list of itmes for recommendation.
         """
         pred_output = self.pred_one_user(user_id)  # 1d np.array
-        items_rated_by_this_user = set(self.ratings_mat_coo[
-            np.where(self.ratings_mat_coo.row == user_id)])
-        items_not_rated_by_this_user =\
-            np.array([i for i in xrange(self.n_items)
-                      if i not in items_rated_by_this_user])
-        return np.argsort(pred_output[items_not_rated_by_this_user])\
-            [-num:][::-1]
+        items_predicted = np.ones(self.n_items, dtype='bool')
+        for icol in xrange(self.n_items):
+            if self.ratings_mat[user_id, icol]:
+                items_predicted[icol] = False
+        return np.argsort(pred_output[items_predicted])[-num:][::-1]
 
 
 """
