@@ -15,25 +15,24 @@ class Validator():
     """
     Class for reading the ratings file, and computing RMSE's for the given model
     """
-    def __init__(self, ratings_filename, network_filename, k=5, test_ratio=None):
+    def __init__(self, ratings_filename, k=5, test_ratio=None):
         """
         Constructor for Validator class.
         It will read the ratings information from the file
         and save it to a sparse matrix (dok format).
         Input:
             ratings_filename: filename for ratings.
-            network_filename: filename for network.
             k: number of folds for cross validation (default: 5)
             test_ratio: ratio of test set (float, 0~1, default: None)
         """
         self.ratings_filename = ratings_filename
-        self.network_filename = network_filename
         self.k = int(k)
         self.test_ratio = test_ratio
 
-        # Read the file.
+        # Read the files.
         ratings_contents = pd.read_csv(ratings_filename,
                             names=['user_id', 'item_id', 'rating'], header=None)
+
         # Creating matrices.
         # ratings_mat: ratings info on a matrix
         # ratings_testing: ratings info for testing (test set).
@@ -171,17 +170,17 @@ def main():
     network_filename = "../data/network" + sys.argv[1]
     # k: number of folds for cross validation.
     k = 5
-    val = Validator(ratings_filename, network_filename, k, 0.1)
+    val = Validator(ratings_filename, k, 0.1)
 
     # Creating an object for my model
     nfeat = int(sys.argv[2])
     if_bias = bool(sys.argv[3])
-    for lrate in [0.003, 0.007]:
-        for rparam in [0.3, 0.5, 0.7]:
+    for lrate in [0.025, 0.005, 0.0075, 0.01]:
+        for rparam in [0.5, 1.0, 1.5, 2.0]:
             my_rec = MatrixFactorization(n_features = nfeat,
                                 learn_rate = lrate,
                                 regularization_param = rparam,
-                                optimizer_pct_improvement_criterion=3,
+                                optimizer_pct_improvement_criterion=1,
                                 user_bias_correction = if_bias,
                                 item_bias_correction = if_bias)
             val_results = val.validate(my_rec)

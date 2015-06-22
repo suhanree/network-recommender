@@ -5,14 +5,13 @@
 
 import numpy as np
 import itertools
-from time import time
 
 
 class MatrixFactorization():
     """
     Class for matrix factorization for recommender.
     It uses SGD (Stochastic Gradient Descent) to mininize
-    RMSE when factoriziing.
+    SSE when factoriziing.
     """
     def __init__(self, n_features=8, learn_rate=0.005,
                  regularization_param=0.02,
@@ -45,6 +44,8 @@ class MatrixFactorization():
         self.saving_matrices = saving_matrices
         self.saved_matrices = saved_matrices
 
+        self.ratings_mat = None
+        self.ratings_mat_coo = None
         self.user_mat = None  # u in SVD
         self.item_mat = None  # v in SVD (diagonal matrix does not exist)
         self.prediction = None  # prediction matrix found after SVD
@@ -61,30 +62,30 @@ class MatrixFactorization():
             return
 
         self.ratings_mat = ratings_mat.copy()  # in dok (dictionary) format.
-        ratings_mat_coo = ratings_mat.tocoo()  # Converting dok to coo format.
+        self.ratings_mat_coo = ratings_mat.tocoo()  # Converting dok to coo format.
                           # coo is better for looping over nonzero values.
         self.n_users, self.n_items = ratings_mat.shape
-        self.n_rated = ratings_mat_coo.row.size
+        self.n_rated = self.ratings_mat_coo.row.size
         print "    problem size:", self.n_users, self.n_items, self.n_rated
 
         # Subtract the overall average rating from ratings_mat.
-        average_rating = ratings_mat_coo.data.mean()
-        for irow, icol in itertools.izip(ratings_mat_coo.row,
-                                         ratings_mat_coo.col):
+        average_rating = self.ratings_mat_coo.data.mean()
+        for irow, icol in itertools.izip(self.ratings_mat_coo.row,
+                                         self.ratings_mat_coo.col):
             self.ratings_mat[irow, icol] -= average_rating
 
         # user bias subtraction done here
         if self.user_bias_correction:
             self.average_ratings_user = np.zeros(self.n_users)
             for irow in xrange(self.n_users):
-                nonzero_indices = np.where(ratings_mat_coo.row == irow)[0]
+                nonzero_indices = np.where(self.ratings_mat_coo.row == irow)[0]
                 if nonzero_indices.size:  # With at least one review
                     self.average_ratings_user[irow] =\
-                        ratings_mat_coo.data[nonzero_indices].mean()\
+                        self.ratings_mat_coo.data[nonzero_indices].mean()\
                         - average_rating
                 else: self.average_ratings_user[irow] = 0
-            for irow, icol in itertools.izip(ratings_mat_coo.row,
-                                             ratings_mat_coo.col):
+            for irow, icol in itertools.izip(self.ratings_mat_coo.row,
+                                             self.ratings_mat_coo.col):
                 self.ratings_mat[irow, icol] -= self.average_ratings_user[irow]
             print "    User biases subtracted"
 
@@ -92,22 +93,22 @@ class MatrixFactorization():
         if self.item_bias_correction:
             self.average_ratings_item = np.zeros(self.n_items)
             for icol in xrange(self.n_items):
-                nonzero_indices = np.where(ratings_mat_coo.col == icol)[0]
+                nonzero_indices = np.where(self.ratings_mat_coo.col == icol)[0]
                 if nonzero_indices.size:  # With at least one review
                     self.average_ratings_item[icol] =\
-                        ratings_mat_coo.data[nonzero_indices].mean()\
+                        self.ratings_mat_coo.data[nonzero_indices].mean()\
                         - average_rating
                 else: self.average_ratings_item[icol] = 0
-            for irow, icol in itertools.izip(ratings_mat_coo.row,
-                                             ratings_mat_coo.col):
+            for irow, icol in itertools.izip(self.ratings_mat_coo.row,
+                                             self.ratings_mat_coo.col):
                 self.ratings_mat[irow, icol] -= self.average_ratings_item[icol]
             print "    Item biases subtracted"
 
         # Initializing u and v  (they are not sparse)
-        self.user_mat = 2 * np.matrix(
+        self.user_mat = 2 * np.array(
             np.random.rand(self.n_users * self.n_features)\
             .reshape([self.n_users, self.n_features])) - 1
-        self.item_mat = 2 * np.matrix(
+        self.item_mat = 2 * np.array(
             np.random.rand(self.n_items * self.n_features)\
             .reshape([self.n_features, self.n_items])) - 1
 
@@ -121,8 +122,8 @@ class MatrixFactorization():
                (pct_improvement > self.optimizer_pct_improvement_criterion)):
             old_sse = sse_accum
             sse_accum = 0
-            for irow, icol in itertools.izip(ratings_mat_coo.row,
-                                                  ratings_mat_coo.col):
+            for irow, icol in itertools.izip(self.ratings_mat_coo.row,
+                                             self.ratings_mat_coo.col):
                 error = self.ratings_mat[irow, icol] -\
                     np.dot(self.user_mat[irow, :], self.item_mat[:, icol])
                 sse_accum += error**2
@@ -163,28 +164,45 @@ class MatrixFactorization():
     def pred_one_rating(self, user_id, item_id):
         """
         Predict for one user-item pair
+        Output:
+            prediected: float
         """
         return self.prediction[user_id, item_id]
 
 
-    def pred_one_user(self, user_id, report_run_time=False):
+    def pred_one_user(self, user_id):
         """
         Predict for one user.
+        Output:
+            prediected: np.array (1d)
         """
         return self.prediction[user_id]
 
 
-    def pred_all(self, report_run_time=False):
+    def pred_all(self):
         """
         Predict for all user-item pairs.
+        Output:
+            prediected: np.array (2d)
         """
         return self.prediction
 
 
     def top_n_recs(self, user_id, num):
-        pred_output = self.pred_one_user(user_id).reshape(1, self.n_items)
-        items_not_rated_by_this_user = \
-            ~(self.ratings_mat[user_id] > 0).todense().reshape(1, self.n_items)
+        """
+        Find top items for a given user based on friends.
+        Input:
+            user_id: user for recommendation.
+            num: number of recommendations.
+        Output:
+            recom: list of itmes for recommendation.
+        """
+        pred_output = self.pred_one_user(user_id)  # 1d np.array
+        items_rated_by_this_user = set(self.ratings_mat_coo[
+            np.where(self.ratings_mat_coo.row == user_id)])
+        items_not_rated_by_this_user =\
+            np.array([i for i in xrange(self.n_items)
+                      if i not in items_rated_by_this_user])
         return np.argsort(pred_output[items_not_rated_by_this_user])\
             [-num:][::-1]
 
