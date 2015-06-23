@@ -1,7 +1,7 @@
 # network-recommender
 This is my capstone project at Galvanize.
 
-![Fig.1](fig/network3b_sfdp.png')
+![Fig.1](fig/network3b_sfdp.png)
 
 
 ## References
