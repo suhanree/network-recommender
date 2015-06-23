@@ -114,11 +114,22 @@ class Validator():
         # Now read the network.
         temp_network = read_dictlist_from_file(network_filename)
         # But we need to map ID's into consecutive integers.
+        not_counted = set([])
         for u_id in temp_network:
-            self.my_network[self.users_id_map[u_id]] = []
-            for u_id2 in temp_network[u_id]:
-                self.my_network[self.users_id_map[u_id]].\
-                    append(self.users_id_map[u_id2])
+            if u_id in self.users_id_map:
+                self.my_network[self.users_id_map[u_id]] = []
+                for u_id2 in temp_network[u_id]:
+                    if u_id2 in self.users_id_map:
+                        self.my_network[self.users_id_map[u_id]].\
+                            append(self.users_id_map[u_id2])
+                    else:
+                        not_counted.add(u_id2)
+            else:
+                not_counted.add(u_id)
+
+        if len(not_counted) > 0:
+            print "    There are some users not counted for the netwrok:", \
+                len(not_counted)
         return
 
 
