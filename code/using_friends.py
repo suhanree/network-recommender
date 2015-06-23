@@ -13,12 +13,13 @@ class Using_Friends():
     Class that uses friends or friends of friends for recommendation.
     It uses information of friends from the given network.
     """
-    def __init__(self, n_ratings_limit=1, n_friend_limit_ratio=0.5,
-                 weight_for_depth2=0.5,
-                 network_filename):
+    def __init__(self, my_network,
+                 n_ratings_limit=1, n_friend_limit_ratio=0.5,
+                 weight_for_depth2=0.5):
         """
         Constructor of the class
         Input:
+            my_network: network info in the form of dict of lists.
             n_ratings_limit: lower limit for the number of ratings
                 for prediction; should be 1 or higher  (default: 1)
             n_friend_limit_ratio: upper limit for the ratio for the number
@@ -27,9 +28,6 @@ class Using_Friends():
             weight_for_depth2: if friends of friends are used for recommendation
                 the weight can be given; should be a float between 0 and 1
                 (default: 0.5)
-            network_filename: filename for the network
-                (in csv format with no header)
-                ("2,1,3,4" in a line means 2 has friends 1, 3, and 4)
         """
         self.n_ratings_limit = n_ratings_limit
         self.n_friend_limit_ratio = n_friend_limit_ratio
@@ -37,7 +35,7 @@ class Using_Friends():
 
         self.ratings_mat = None  # will be obtained in fit method.
         self.ratings_mat_coo = None  # will be obtained in fit method.
-        self.my_network = read_dictlist_from_file(network_filename)
+        self.my_network = my_network
         self.my_friends = {}  # will be found in fit method (dict of sets).
         self.my_friends2 = {}  # {friends of friends} - {friends} (dict of sets)
                                 # (store only additional friends).
@@ -72,13 +70,13 @@ class Using_Friends():
                         self.pick_random(temp_friends, n_friends_limit)
                         # this will returns a set of friends
                     self.my_friends2[user_id] = set([])  # empty set
-                    countinue  #No need to find friends of friends for this user
+                    continue  #No need to find friends of friends for this user
             else:
                 self.my_friends[user_id] = set(temp_friends)
 
             # Second, we add friends of depth 2, if needed.
             temp_friends2 = []
-            temp_friends2_set = set([temp_friends])  # To be used for checking.
+            temp_friends2_set = set(temp_friends)  # To be used for checking.
             temp_friends2_set.add(user_id)  # Don't want to add this user.
             for friend in temp_friends:
                 for friend2 in self.my_network[friend]:
@@ -86,18 +84,18 @@ class Using_Friends():
                         temp_friends2.append(friend2)
                         temp_friends2_set.add(friend2)
             if len(temp_friends2) > n_friends_limit - len(temp_friends):
-                    self.my_friend2[user_id] = \
+                    self.my_friends2[user_id] = \
                         self.pick_random(temp_friends2,
                                          n_friends_limit - len(temp_friends))
             else:
-                self.my_friends2[user_id] = set([temp_friends2])
+                self.my_friends2[user_id] = set(temp_friends2)
 
         # Here we also find rows with non-zero ratings for given item.
         # It will be more efficient for predictions to have these ready
         # even though it uses more memory.
         for icol in xrange(self.n_items):
             self.rows_nonzero.append([])
-        for irow, icol in izip(self.ratings_mat_coo.row,
+        for irow, icol in itertools.izip(self.ratings_mat_coo.row,
                                self.ratings_mat_coo.col):
             self.rows_nonzero[icol].append(irow)
             # it's OK, because the order doesn't matter.
@@ -129,11 +127,12 @@ class Using_Friends():
         count = 0.
         rating_sum = 0.
         for irow in rows:  # For all rows with non-zero ratings.
-            if irow in my_friends[user_id]:
-                rating_sum += val
+            if irow in self.my_friends[user_id]:
+                rating_sum += self.ratings_mat[irow, item_id]
                 count += 1.   # weight is 1 for direct friends.
-            elif irow in my_friends2[user_id]:
-                rating_sum += val * self.weight_for_depth2
+            elif irow in self.my_friends2[user_id]:
+                rating_sum += self.ratings_mat[irow, item_id]\
+                    * self.weight_for_depth2
                 count += self.weight_for_depth2
         if count >= self.n_ratings_limit:
             return rating_sum/count
@@ -155,10 +154,10 @@ class Using_Friends():
         Output:
             predicted: np.array (1d)
         """
-        prediction = np.zero(self.n_items)  # Initialize predictions.
-        counts = np.zero(self.n_items, dtype='int')
+        prediction = np.zeros(self.n_items)  # Initialize predictions.
+        counts = np.zeros(self.n_items, dtype='int')
         for item_id in xrange(self.n_items):
-            prediction[icol] = self.pred_one_rating(user_id, item_id)
+            prediction[item_id] = self.pred_one_rating(user_id, item_id)
             # There is no efficiency lost, by calling this function one by one.
         return prediction
 
@@ -205,5 +204,5 @@ class Using_Friends():
             return set(friends_list)
 
         np.random.seed(seed)  # Set the seed as given
-        return set(np.random.choice(friends_list, size=n_friends_limint,
+        return set(np.random.choice(friends_list, size=n_friends_limit,
                                     replace=False))

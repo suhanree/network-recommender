@@ -7,7 +7,7 @@ import numpy as np
 import itertools
 
 
-class MatrixFactorization():
+class Matrix_Factorization():
     """
     Class for matrix factorization for recommender.
     It uses SGD (Stochastic Gradient Descent) to mininize

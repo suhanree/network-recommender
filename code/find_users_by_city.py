@@ -141,10 +141,13 @@ def main():
             if comp.number_of_nodes() > max_size:
                 max_size = comp.number_of_nodes()
                 biggest_subgraph = comp
+
+        # Set of users with any friend in the biggest component.
         user_with_friend = set(biggest_subgraph.nodes())
 
         # Now it is time to save network data into csv files.
-        write_dictlist_to_file(network_city_filename % city,
+        write_dictlist_to_file(network_city_filename % city, my_net)
+        write_dictlist_to_file(network_city_filename % city + 'b',
                                convert_from_nx(biggest_subgraph))
 
         # Find degrees and save degree info into files.
