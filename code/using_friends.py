@@ -5,7 +5,6 @@
 
 import numpy as np
 import itertools
-import sys
 
 
 class Using_Friends():
@@ -66,7 +65,7 @@ class Using_Friends():
             # temporary list (not copied).
             temp_friends = self.my_network[user_id]
             if len(temp_friends) > n_friends_limit:
-                    self.my_friend[user_id] = \
+                    self.my_friends[user_id] = \
                         self.pick_random(temp_friends, n_friends_limit)
                         # this will returns a set of friends
                     self.my_friends2[user_id] = set([])  # empty set
@@ -155,7 +154,6 @@ class Using_Friends():
             predicted: np.array (1d)
         """
         prediction = np.zeros(self.n_items)  # Initialize predictions.
-        counts = np.zeros(self.n_items, dtype='int')
         for item_id in xrange(self.n_items):
             prediction[item_id] = self.pred_one_rating(user_id, item_id)
             # There is no efficiency lost, by calling this function one by one.
