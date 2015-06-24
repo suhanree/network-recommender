@@ -1,4 +1,4 @@
-# To run the recommender system.
+# To test the recommender system.
 
 # by Suhan Ree
 # last edited on 06-22-2015
@@ -237,10 +237,20 @@ def main():
     """
     # Create the Validator object.
     # k: number of folds for cross validation.
-    k = 5
+    k = 10
     val = Validator(ratings_filename, network_filename, k, 0.)
+    print val.get_baseline()
 
     """
+    mf = Matrix_Factorization(n_features = 10,
+                        learn_rate = 0.1,
+                        regularization_param = 0.1,
+                        optimizer_pct_improvement_criterion=1,
+                        user_bias_correction = True,
+                        item_bias_correction = True)
+    baseline1, baseline2 = val.get_baseline(mf, bias=bool(sys.argv[3]))
+    print baseline1, np.mean(baseline1)
+    print baseline2, np.mean(baseline2)
     # Creating an object for my model
     nfeat = int(sys.argv[2])
     if_bias = bool(sys.argv[3])
@@ -255,7 +265,6 @@ def main():
             val_results = val.validate(my_rec)
             print 'validation results: '
             print nfeat, lrate, rparam, val_results, np.mean(val_results)
-    """
     for rlimit in [1,2,3,4,5]:
         for flimit in [0.2, 0.3, 0.4, 0.5]:
             for weight in [0.5, 0.6, 0.7, 0.8]:
@@ -270,6 +279,7 @@ def main():
     #my_meta_predictor = MetaPredictor(my_mf_rec_engine, my_pop_rec_engine,\
     #    criteria=5)
     #my_meta_predictor.fit(ratings_mat)
+    """
 
 
 

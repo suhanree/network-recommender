@@ -49,8 +49,8 @@ class Matrix_Factorization():
         self.user_mat = None  # u in SVD
         self.item_mat = None  # v in SVD (diagonal matrix does not exist)
         self.prediction = None  # prediction matrix found after SVD
-        self.average_ratings_user = None
-        self.average_ratings_item = None
+        self.average_bias_user = None
+        self.average_bias_item = None
 
 
     def fit(self, ratings_mat):
@@ -76,32 +76,32 @@ class Matrix_Factorization():
 
         # user bias subtraction done here
         if self.user_bias_correction:
-            self.average_ratings_user = np.zeros(self.n_users)
+            self.average_bias_user = np.zeros(self.n_users)
             for irow in xrange(self.n_users):
                 nonzero_indices = np.where(self.ratings_mat_coo.row == irow)[0]
                 if nonzero_indices.size:  # With at least one review
-                    self.average_ratings_user[irow] =\
+                    self.average_bias_user[irow] =\
                         self.ratings_mat_coo.data[nonzero_indices].mean()\
                         - average_rating
-                else: self.average_ratings_user[irow] = 0
+                else: self.average_bias_user[irow] = 0
             for irow, icol in itertools.izip(self.ratings_mat_coo.row,
                                              self.ratings_mat_coo.col):
-                self.ratings_mat[irow, icol] -= self.average_ratings_user[irow]
+                self.ratings_mat[irow, icol] -= self.average_bias_user[irow]
             print "    User biases subtracted"
 
         # item bias subtraction done here
         if self.item_bias_correction:
-            self.average_ratings_item = np.zeros(self.n_items)
+            self.average_bias_item = np.zeros(self.n_items)
             for icol in xrange(self.n_items):
                 nonzero_indices = np.where(self.ratings_mat_coo.col == icol)[0]
                 if nonzero_indices.size:  # With at least one review
-                    self.average_ratings_item[icol] =\
+                    self.average_bias_item[icol] =\
                         self.ratings_mat_coo.data[nonzero_indices].mean()\
                         - average_rating
-                else: self.average_ratings_item[icol] = 0
+                else: self.average_bias_item[icol] = 0
             for irow, icol in itertools.izip(self.ratings_mat_coo.row,
                                              self.ratings_mat_coo.col):
-                self.ratings_mat[irow, icol] -= self.average_ratings_item[icol]
+                self.ratings_mat[irow, icol] -= self.average_bias_item[icol]
             print "    Item biases subtracted"
 
         # Initializing u and v  (they are not sparse)
@@ -151,10 +151,10 @@ class Matrix_Factorization():
         # Adding back baises subtracted before finding u and v
         if self.user_bias_correction:
             self.prediction = self.prediction +\
-                self.average_ratings_user.reshape(-1, 1)
+                self.average_bias_user.reshape(-1, 1)
         if self.item_bias_correction:
             self.prediction = self.prediction +\
-                self.average_ratings_item.reshape(1, -1)
+                self.average_bias_item.reshape(1, -1)
 
         # If saveing is needed
         if self.saving_matrices:
@@ -186,6 +186,23 @@ class Matrix_Factorization():
             prediected: np.array (2d)
         """
         return self.prediction
+
+
+    def pred_baseline(self, bias=False):
+        """
+        Get baseline predictions with average ratings.
+        Input:
+            bias: if True, bias terms for users and items will be added.
+                (default: False)
+        Output:
+            prediected: np.array (2d)
+        """
+        predicted = self.ratings_mat_coo.data.mean() * np.ones((self.n_users,
+                                                                 self.n_items))
+        if bias:
+            predicted += self.average_bias_user.reshape(-1, 1) +\
+                self.average_bias_item.reshape(1, -1)
+        return predicted
 
 
     def top_n_recs(self, user_id, num):
