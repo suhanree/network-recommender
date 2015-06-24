@@ -8,10 +8,15 @@ import pandas as pd
 import numpy as np
 from scipy import sparse
 import itertools
-from factorization import Matrix_Factorization # , MetaPredictor
+from factorization import Matrix_Factorization  # , MetaPredictor
 from using_friends import Using_Friends
-from my_utilities import read_dictlist_from_file
+from my_utilities import read_dictlist_from_file, reindex_graph
 
+# Filenames needed.
+ratings_filename = "../data/reviews" + sys.argv[1]
+network_filename = "../data/network" + sys.argv[1] + "b.csv"
+#ratings_filename = "sample_ratings"
+#network_filename = "sample_network"
 
 
 class Validator():
@@ -114,22 +119,11 @@ class Validator():
         # Now read the network.
         temp_network = read_dictlist_from_file(network_filename)
         # But we need to map ID's into consecutive integers.
-        not_counted = set([])
-        for u_id in temp_network:
-            if u_id in self.users_id_map:
-                self.my_network[self.users_id_map[u_id]] = []
-                for u_id2 in temp_network[u_id]:
-                    if u_id2 in self.users_id_map:
-                        self.my_network[self.users_id_map[u_id]].\
-                            append(self.users_id_map[u_id2])
-                    else:
-                        not_counted.add(u_id2)
-            else:
-                not_counted.add(u_id)
-
-        if len(not_counted) > 0:
-            print "    There are some users not counted for the netwrok:", \
-                len(not_counted)
+        self.my_network, users_id_map, not_counted = reindex_graph(temp_network,
+                                                            self.users_id_map)
+        if not_counted > 0:
+            print "    There are some users not counted for the network:", \
+                not_counted
         return
 
 
@@ -223,11 +217,7 @@ def main():
     """
     To run the recommender model.
     """
-    # Read the the ratings data from a file, and store them in matrices.
-    ratings_filename = "../data/reviews" + sys.argv[1]
-    network_filename = "../data/network" + sys.argv[1] + ".csv"
-    #ratings_filename = "sample_ratings"
-    #network_filename = "sample_network"
+    # Create the Validator object.
     # k: number of folds for cross validation.
     k = 10
     val = Validator(ratings_filename, network_filename, k, 0.)

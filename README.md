@@ -21,3 +21,14 @@ This is my capstone project at Galvanize.
    10.6084/m9.figshare.1164194 (2014).
 
 5. Mining of Massive Datasets, by Jure Leskovec, Anand Rajaraman, and Jeffrey D. Ullman, [http://infolab.stanford.edu/~ullman/mmds/book.pdf](http://infolab.stanford.edu/~ullman/mmds/book.pdf) (2014). 
+
+6. Systems and methods to facilitate searches based on social graphs and affinity groups,
+  by David Yoo, US Patent App. 14/516,875, 
+  [https://www.google.com/patents/US20150120589](https://www.google.com/patents/US20150120589),
+  (2015).
+
+7. Use of social network information to enhance collaborative filtering performance,
+    by Fengkun Liu and Hong Joo Lee, Expert Systems with Applications, 37,
+    4772-8 (2010).
+
+

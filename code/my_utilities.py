@@ -3,7 +3,7 @@
 # by Suhan Ree
 # last edited on 06-18-2015
 
-# import numpy as np
+import numpy as np
 # import pandas as pd
 import json
 import csv
@@ -178,3 +178,67 @@ def convert_from_nx(graph_nx):
         for friend in graph_nx.neighbors(node):
             graph_dict[node].append(friend)
     return graph_dict
+
+
+def adjacency_matrix(graph_dict):
+    """
+    Returns the adjacency matrix in np.arary from a graph in dict lof lists.
+    Input:
+        graph_dict: graph in a dict of lists (it is assumed that user ID's
+            are numbered from 0 to size-1 consecutively.
+    Output:
+        adjacency: adjacency matrix in np.array (at the moment, it is assumed
+            that the size is not too big, so that we can use dense matrices).
+    """
+    size = len(graph_dict)
+    adjacency = np.zeros((size, size))
+    for user_id in graph_dict:
+        for friend_id in graph_dict[user_id]:
+            adjacency[user_id, friend_id] = 1
+    return adjacency
+
+
+def reindex_graph(graph_dict, users_id_map=None):
+    """
+    reindex the graph so that user ID's are indexed from 0 to n-1
+    consecutively.
+    Input:
+        graph_dict: a dict of lists representing a graph.
+        users_id_map: map for old user ID to new user ID (if found, already)
+                        (default: None)
+    Output:
+        new_graph_dict: a dict of lists representing the same graph
+        users_id_map: returns the map between old and new ID's
+                    If we are given an old one, it will be returned.
+        num_not_counted: number of users not counted.
+    """
+    new_graph_dict = {}
+    if users_id_map is not None:
+        not_counted = set([])
+        for u_id in graph_dict:
+            if u_id in users_id_map:
+                new_graph_dict[users_id_map[u_id]] = []
+                for u_id2 in graph_dict[u_id]:
+                    if u_id2 in users_id_map:
+                        new_graph_dict[users_id_map[u_id]].\
+                            append(users_id_map[u_id2])
+                    else:
+                        not_counted.add(u_id2)
+            else:
+                not_counted.add(u_id)
+        return new_graph_dict, users_id_map, len(not_counted)
+    else:
+        users_id_map = {}
+        new_id = 0
+        for u_id in graph_dict:
+            if u_id not in users_id_map:
+                users_id_map[u_id] = new_id
+                new_id += 1
+            new_graph_dict[users_id_map[u_id]] = []
+            for u_id2 in graph_dict[u_id]:
+                if u_id2 not in users_id_map:
+                    users_id_map[u_id2] = new_id
+                    new_id += 1
+                new_graph_dict[users_id_map[u_id]].\
+                    append(users_id_map[u_id2])
+        return new_graph_dict, users_id_map, 0
