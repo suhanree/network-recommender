@@ -14,7 +14,8 @@ import cPickle as pickle
 from my_utilities import read_dictlist_from_file, read_dict_from_file
 
 # Filename for the pickled data of reviews with city info.
-network_filename = '../data/networkr.csv'
+network_filename = '../data/network0.csv'
+#network_filename = 'sample_network'
 user_by_city_filename = '../data/user_by_city'
 
 graph_pickle_filename = '../data/graph.pkl'
@@ -47,11 +48,12 @@ def read_file(network_filename, user_by_city_filename=None):
                 user_id_map[id1] = new_id
                 gg.add_vertex()  # index for this vertex will be new_id
                 new_id += 1
-            if id1 != user_id:
+            if id1 > user_id:
                 gg.add_edge(gg.vertex(user_id_map[user_id]),
                             gg.vertex(user_id_map[id1]))
-
     print "Done reading the graph."
+    if user_by_city_filename is None:
+        return (gg, None)
     if user_by_city_filename is not None:
         cities = read_dict_from_file(user_by_city_filename)
         # Adding vertex property as city
@@ -64,6 +66,7 @@ def read_file(network_filename, user_by_city_filename=None):
 
 
 def main():
+    """
     if os.path.exists(graph_pickle_filename):
         with open(graph_pickle_filename, 'r') as f:
             (gg, city_prop) = pickle.load(f)
@@ -109,6 +112,13 @@ def main():
                vertex_size=1, edge_pen_width=1.2,
                #vcmap=matplotlib.cm.gist_heat_r,
                output="whole_network.png")
+    """
+    (gg, temp) = read_file(network_filename)
+    #names = gg.new_vertex_property('string')
+    #for i, v in enumerate(gg.vertices()):
+    #    names[v] = str(i)
+    pos = sfdp_layout(gg)
+    graph_draw(gg, pos=pos, output='sample.png')
     return
 
 
