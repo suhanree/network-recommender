@@ -13,8 +13,10 @@ This is my capstone project at Galvanize.
    recommender systems, by P. Bonhard and M. A. Sasse, BT Technology Journal,
    24, 3 (2006).
 
-3. Social Recommender Systems, by Bornali Borah, Priyanka Konwar, and Gypsy Nandi,
-    I3CS’15 (2015).
+3. Social   Recommender Systems: An Influence on Public Media,
+    by Bornali Borah, Priyanka Konwar, and Gypsy Nandi,
+    I3CS15 (Internaional Conference on Computing and Communication Systems)
+            (2015).
 
 4. “The graph-tool python library”, by Tiago P. Peixoto, 
    [figshare](http://figshare.com/articles/graph_tool/1164194). DOI:
@@ -30,5 +32,3 @@ This is my capstone project at Galvanize.
 7. Use of social network information to enhance collaborative filtering performance,
     by Fengkun Liu and Hong Joo Lee, Expert Systems with Applications, 37,
     4772-8 (2010).
-
-
