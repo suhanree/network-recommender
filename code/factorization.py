@@ -51,6 +51,7 @@ class Matrix_Factorization():
         self.prediction = None  # prediction matrix found after SVD
         self.average_bias_user = None
         self.average_bias_item = None
+        self.average_rating = 0
 
 
     def fit(self, ratings_mat):
@@ -69,10 +70,10 @@ class Matrix_Factorization():
         print "    problem size:", self.n_users, self.n_items, self.n_rated
 
         # Subtract the overall average rating from ratings_mat.
-        average_rating = self.ratings_mat_coo.data.mean()
+        self.average_rating = self.ratings_mat_coo.data.mean()
         for irow, icol in itertools.izip(self.ratings_mat_coo.row,
                                          self.ratings_mat_coo.col):
-            self.ratings_mat[irow, icol] -= average_rating
+            self.ratings_mat[irow, icol] -= self.average_rating
 
         # user bias subtraction done here
         if self.user_bias_correction:
@@ -82,7 +83,7 @@ class Matrix_Factorization():
                 if nonzero_indices.size:  # With at least one review
                     self.average_bias_user[irow] =\
                         self.ratings_mat_coo.data[nonzero_indices].mean()\
-                        - average_rating
+                        - self.average_rating
                 else: self.average_bias_user[irow] = 0
             for irow, icol in itertools.izip(self.ratings_mat_coo.row,
                                              self.ratings_mat_coo.col):
@@ -97,7 +98,7 @@ class Matrix_Factorization():
                 if nonzero_indices.size:  # With at least one review
                     self.average_bias_item[icol] =\
                         self.ratings_mat_coo.data[nonzero_indices].mean()\
-                        - average_rating
+                        - self.average_rating
                 else: self.average_bias_item[icol] = 0
             for irow, icol in itertools.izip(self.ratings_mat_coo.row,
                                              self.ratings_mat_coo.col):
@@ -122,18 +123,40 @@ class Matrix_Factorization():
                (pct_improvement > self.optimizer_pct_improvement_criterion)):
             old_sse = sse_accum
             sse_accum = 0
-            for irow, icol in itertools.izip(self.ratings_mat_coo.row,
-                                             self.ratings_mat_coo.col):
-                error = self.ratings_mat[irow, icol] -\
+            for irow, icol, val in itertools.izip(self.ratings_mat_coo.row,
+                                             self.ratings_mat_coo.col,
+                                             self.ratings_mat_coo.data):
+                error = val - self.find_rating_from_uv(irow, icol)
+                #print irow, icol, val, self.find_rating_from_uv(irow, icol)
+                sse_accum += error**2
+                for k in range(self.n_features):
+                    self.user_mat[irow, k] = self.user_mat[irow, k] +\
+                        self.learn_rate * \
+                        (error * self.item_mat[k, icol] -
+                         self.regularization_param * self.user_mat[irow, k])
+                    self.item_mat[k, icol] = self.item_mat[k, icol] +\
+                        self.learn_rate * \
+                        (error * self.user_mat[irow, k] -
+                         self.regularization_param * self.item_mat[k, icol])
+                """
+                error = val -\
+                    np.dot(self.user_mat[irow, :], self.item_mat[:, icol])
+                print  irow, icol, val,\
                     np.dot(self.user_mat[irow, :], self.item_mat[:, icol])
                 sse_accum += error**2
                 for k in range(self.n_features):
-                    self.user_mat[irow, k] += self.learn_rate * \
+                    if np.isnan(self.user_mat).sum(): print 'a', irow, k, icol, error
+                    self.user_mat[irow, k] = self.user_mat[irow, k] +\
+                        self.learn_rate * \
                         (2 * error * self.item_mat[k, icol] -\
                         self.regularization_param * self.user_mat[irow, k])
-                    self.item_mat[k, icol] += self.learn_rate * (2 * error *\
+                    if np.isnan(self.user_mat).sum(): print 'b', irow, k, icol, error
+                    self.item_mat[k, icol] = self.item_mat[k, icol] +\
+                        self.learn_rate * (2 * error *\
                         self.user_mat[irow, k] - self.regularization_param\
                         * self.item_mat[k, icol])
+                    if np.isnan(self.user_mat).sum(): print 'c', irow, k, icol, error
+                """
             pct_improvement = 100 * (old_sse - sse_accum) / old_sse
             #print("    %d \t\t %f \t\t %f" % (
             #    optimizer_iteration_count, sse_accum /\
@@ -143,10 +166,12 @@ class Matrix_Factorization():
         print "    Iteration done in", optimizer_iteration_count, "times."
 
         # prediction matrix (not sparse)
+        #print self.user_mat
+        #print self.item_mat
         self.prediction = np.dot(self.user_mat, self.item_mat)
 
         # average rating added.
-        self.prediction += average_rating
+        self.prediction += self.average_rating
 
         # Adding back baises subtracted before finding u and v
         if self.user_bias_correction:
@@ -170,6 +195,21 @@ class Matrix_Factorization():
         return self.prediction[user_id, item_id]
 
 
+    def find_rating_from_uv(self, user_id, item_id):
+        """
+        Compute rating from current u and v
+        Output:
+            prediected: float
+        """
+        rating = np.dot(self.user_mat[user_id, :], self.item_mat[:, item_id])\
+                 + self.average_rating
+        if self.user_bias_correction:
+            rating += self.average_bias_user[user_id]
+        if self.item_bias_correction:
+            rating += self.average_bias_item[item_id]
+        return rating
+
+
     def pred_one_user(self, user_id):
         """
         Predict for one user.
@@ -188,21 +228,24 @@ class Matrix_Factorization():
         return self.prediction
 
 
-    def pred_baseline(self, bias=False):
+    def pred_average(self, user_bias=False, item_bias=False):
         """
-        Get baseline predictions with average ratings.
+        Predict based on item averages irregardless of users.
         Input:
-            bias: if True, bias terms for users and items will be added.
-                (default: False)
+            user_bias: if True, add user_bias (default: False)
+            item_bias: if True, add item_bias (default: False)
         Output:
             prediected: np.array (2d)
         """
-        predicted = self.ratings_mat_coo.data.mean() * np.ones((self.n_users,
-                                                                 self.n_items))
-        if bias:
-            predicted += self.average_bias_user.reshape(-1, 1) +\
-                self.average_bias_item.reshape(1, -1)
-        return predicted
+        prediction = np.zeros((self.n_users, self.n_items)) +\
+            self.average_rating
+        if user_bias:
+            for irow in xrange(self.n_users):
+                prediction[irow, :] += self.average_bias_user[irow]
+        if item_bias:
+            for icol in xrange(self.n_items):
+                prediction[:, icol] += self.average_bias_item[icol]
+        return prediction
 
 
     def top_n_recs(self, user_id, num):

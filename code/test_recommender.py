@@ -237,7 +237,7 @@ def main():
     """
     # Create the Validator object.
     # k: number of folds for cross validation.
-    k = 10
+    k = 5
     val = Validator(ratings_filename, network_filename, k, 0.)
     print val.get_baseline()
 
@@ -268,6 +268,10 @@ def main():
     for rlimit in [1,2,3,4,5]:
         for flimit in [0.2, 0.3, 0.4, 0.5]:
             for weight in [0.5, 0.6, 0.7, 0.8]:
+    """
+    for rlimit in range(30, 101, 10):
+        for flimit in [0.7]:
+            for weight in [1.0]:
                 uf = Using_Friends(val.get_network(),
                     n_ratings_limit=rlimit, n_friend_limit_ratio=flimit,
                     weight_for_depth2=weight)
@@ -279,7 +283,6 @@ def main():
     #my_meta_predictor = MetaPredictor(my_mf_rec_engine, my_pop_rec_engine,\
     #    criteria=5)
     #my_meta_predictor.fit(ratings_mat)
-    """
 
 
 

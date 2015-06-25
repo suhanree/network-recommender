@@ -107,6 +107,11 @@ class Validator():
                         self.list_ratings_rest[j][uu, ii] = rating
             count += 1
         """
+        for j in range(k):
+            print j, len(self.list_ratings_val[j])
+            print j, len(self.list_ratings_rest[j])
+        print len(self.ratings_test)
+        print len(self.ratings_train)
         print self.users_id_map
         print self.items_id_map
         print 'test', self.ratings_test
@@ -127,13 +132,14 @@ class Validator():
         return
 
 
-    def validate(self, recommender):
+    def validate(self, recommender, use_average=False):
         """
         Perform the K-fold validation using k folds (k times)
         Here we already have split ratings for k folds.
         Input:
             recommender: model
             ratings: ratings matrix for
+            use_average: if True, predict using just averages (default: False)
         Output:
             rmse: list of RMSE for each fold.
         """
@@ -143,8 +149,12 @@ class Validator():
         for i in range(self.k):
             print "Validation set", i, "started."
             recommender.fit(self.list_ratings_rest[i])
-            #print 'v', self.list_ratings_val[i]
-            (rmse, ratio) = self.find_rmse(recommender,
+            if use_average:
+                prediction = recommender.pred_average(False, True)
+                (rmse, ratio) = self.find_rmse_prediction(prediction,
+                                                self.list_ratings_val[i])
+            else:
+                (rmse, ratio) = self.find_rmse(recommender,
                                             self.list_ratings_val[i])
             list_rmse.append(rmse)
             list_ratio.append(ratio)
@@ -186,13 +196,44 @@ class Validator():
         for irow, icol, val in itertools.izip(mat.row, mat.col, mat.data):
             #print irow, icol, val, recommender.pred_one_rating(irow, icol)
             predicted = recommender.pred_one_rating(irow, icol)
+            print irow, icol, val-predicted
             if predicted > 0.0001:
-                squared_sum += \
-                    (val - recommender.pred_one_rating(irow, icol))**2
+                squared_sum += (val - predicted)**2
                 n_predicted += 1
             else:
                 n_not_predicted += 1
             #print irow, icol, val, recommender.pred_one_rating(irow, icol)
+        if n_predicted == 0:
+            return (None, None)
+        else:
+            return np.sqrt(squared_sum/n_predicted), n_predicted/float(n_total)
+
+
+    def find_rmse_prediction(self, prediction, ratings):
+        """
+        Using the prediction matrix, compute the RMSE of the validation set.
+        Has the feature that if there is no prediction, it will ignore those.
+        So it only considers the ones with predictions (useful for network-based
+        model).
+        Input:
+            prediction: prediction matrix.
+            ratings_val: sparse matrix containing validation set.
+        Output:
+            rmse: float
+            ratio_predicted: ratio of ratigns predicted (float)
+        """
+        mat = ratings.tocoo()  # coo format is know to be faster when looping.
+        n_total = len(mat.row)
+        # Loop over non-zero values
+        squared_sum = 0.
+        n_not_predicted = 0
+        n_predicted = 0
+        for irow, icol, val in itertools.izip(mat.row, mat.col, mat.data):
+            if prediction[irow, icol] > 0.0001:
+                squared_sum += (val - prediction[irow, icol])**2
+                n_predicted += 1
+            else:
+                n_not_predicted += 1
         if n_predicted == 0:
             return (None, None)
         else:
@@ -239,6 +280,14 @@ def main():
     # k: number of folds for cross validation.
     k = 5
     val = Validator(ratings_filename, network_filename, k, 0.)
+    my_rec = Matrix_Factorization(n_features = 10,
+                        learn_rate = 0.1,
+                        regularization_param = 0.1,
+                        optimizer_pct_improvement_criterion=1,
+                        user_bias_correction = True,
+                        item_bias_correction = True)
+    vals = val.validate(my_rec)
+    print vals#, np.mean(vals[0])
 
     """
     # Creating an object for my model
@@ -255,7 +304,6 @@ def main():
             val_results = val.validate(my_rec)
             print 'validation results: '
             print nfeat, lrate, rparam, val_results, np.mean(val_results)
-    """
     for rlimit in [1,2,3,4,5]:
         for flimit in [0.2, 0.3, 0.4, 0.5]:
             for weight in [0.5, 0.6, 0.7, 0.8]:
@@ -270,6 +318,7 @@ def main():
     #my_meta_predictor = MetaPredictor(my_mf_rec_engine, my_pop_rec_engine,\
     #    criteria=5)
     #my_meta_predictor.fit(ratings_mat)
+    """
 
 
 
