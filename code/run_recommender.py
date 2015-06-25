@@ -196,7 +196,7 @@ class Validator():
         for irow, icol, val in itertools.izip(mat.row, mat.col, mat.data):
             #print irow, icol, val, recommender.pred_one_rating(irow, icol)
             predicted = recommender.pred_one_rating(irow, icol)
-            print irow, icol, val-predicted
+            #print irow, icol, val-predicted
             if predicted > 0.0001:
                 squared_sum += (val - predicted)**2
                 n_predicted += 1
@@ -280,6 +280,7 @@ def main():
     # k: number of folds for cross validation.
     k = 5
     val = Validator(ratings_filename, network_filename, k, 0.)
+    """
     my_rec = Matrix_Factorization(n_features = 10,
                         learn_rate = 0.1,
                         regularization_param = 0.1,
@@ -287,23 +288,25 @@ def main():
                         user_bias_correction = True,
                         item_bias_correction = True)
     vals = val.validate(my_rec)
-    print vals#, np.mean(vals[0])
+    print vals, np.mean(vals[0])
 
     """
     # Creating an object for my model
     nfeat = int(sys.argv[2])
-    if_bias = bool(sys.argv[3])
-    for lrate in [0.025, 0.005, 0.0075, 0.01]:
-        for rparam in [0.5, 1.0, 1.5, 2.0]:
+    user_bias = bool(sys.argv[3])
+    item_bias = bool(sys.argv[4])
+    for lrate in [0.0005, 0.001, 0.003, 0.005, 0.007, 0.009]:
+        for rparam in [0.005, 0.01, 0.03, 0.05, 0.07]:
             my_rec = Matrix_Factorization(n_features = nfeat,
                                 learn_rate = lrate,
                                 regularization_param = rparam,
-                                optimizer_pct_improvement_criterion=1,
-                                user_bias_correction = if_bias,
-                                item_bias_correction = if_bias)
+                                optimizer_pct_improvement_criterion=3,
+                                user_bias_correction = user_bias,
+                                item_bias_correction = item_bias)
             val_results = val.validate(my_rec)
             print 'validation results: '
             print nfeat, lrate, rparam, val_results, np.mean(val_results)
+    """
     for rlimit in [1,2,3,4,5]:
         for flimit in [0.2, 0.3, 0.4, 0.5]:
             for weight in [0.5, 0.6, 0.7, 0.8]:
@@ -323,10 +326,11 @@ def main():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print "Usage: python run_recommender.py 0 8 1"
+    if len(sys.argv) != 5:
+        print "Usage: python run_recommender.py 0 8 0 1"
         print "     0 is a city number (0: Phoenix, 1: Las Vegas, 3: Montreal)"
         print "     8 is n_feature, the number of latent features"
-        print "     1 if bias (user and item) is considered, 0 otherwise"
+        print "     1 if bias (user) is considered, 0 otherwise"
+        print "     1 if bias (item) is considered, 0 otherwise"
         sys.exit()
     main()

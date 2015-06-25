@@ -123,11 +123,11 @@ class Matrix_Factorization():
                (pct_improvement > self.optimizer_pct_improvement_criterion)):
             old_sse = sse_accum
             sse_accum = 0
-            for irow, icol, val in itertools.izip(self.ratings_mat_coo.row,
-                                             self.ratings_mat_coo.col,
-                                             self.ratings_mat_coo.data):
-                error = val - self.find_rating_from_uv(irow, icol)
-                #print irow, icol, val, self.find_rating_from_uv(irow, icol)
+            for irow, icol in itertools.izip(self.ratings_mat_coo.row,
+                                             self.ratings_mat_coo.col):
+                # Adjusted self.ratings_mat should be used here.
+                error = self.ratings_mat[irow, icol] - \
+                    np.dot(self.user_mat[irow, :], self.item_mat[:, icol])
                 sse_accum += error**2
                 for k in range(self.n_features):
                     self.user_mat[irow, k] = self.user_mat[irow, k] +\
@@ -138,25 +138,6 @@ class Matrix_Factorization():
                         self.learn_rate * \
                         (error * self.user_mat[irow, k] -
                          self.regularization_param * self.item_mat[k, icol])
-                """
-                error = val -\
-                    np.dot(self.user_mat[irow, :], self.item_mat[:, icol])
-                print  irow, icol, val,\
-                    np.dot(self.user_mat[irow, :], self.item_mat[:, icol])
-                sse_accum += error**2
-                for k in range(self.n_features):
-                    if np.isnan(self.user_mat).sum(): print 'a', irow, k, icol, error
-                    self.user_mat[irow, k] = self.user_mat[irow, k] +\
-                        self.learn_rate * \
-                        (2 * error * self.item_mat[k, icol] -\
-                        self.regularization_param * self.user_mat[irow, k])
-                    if np.isnan(self.user_mat).sum(): print 'b', irow, k, icol, error
-                    self.item_mat[k, icol] = self.item_mat[k, icol] +\
-                        self.learn_rate * (2 * error *\
-                        self.user_mat[irow, k] - self.regularization_param\
-                        * self.item_mat[k, icol])
-                    if np.isnan(self.user_mat).sum(): print 'c', irow, k, icol, error
-                """
             pct_improvement = 100 * (old_sse - sse_accum) / old_sse
             #print("    %d \t\t %f \t\t %f" % (
             #    optimizer_iteration_count, sse_accum /\
