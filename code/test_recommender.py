@@ -12,12 +12,6 @@ from factorization import Matrix_Factorization  # , MetaPredictor
 from using_friends import Using_Friends
 from my_utilities import read_dictlist_from_file, reindex_graph
 
-# Filenames needed.
-ratings_filename = "../data/reviews" + sys.argv[1]
-network_filename = "../data/network" + sys.argv[1] + "b.csv"
-#ratings_filename = "sample_ratings"
-#network_filename = "sample_network"
-
 
 class Validator():
     """
@@ -127,7 +121,7 @@ class Validator():
         return
 
 
-    def validate(self, recommender):
+    def validate(self, recommender, run_all=True):
         """
         Perform the K-fold validation using k folds (k times)
         Here we already have split ratings for k folds.
@@ -140,12 +134,21 @@ class Validator():
         # Perform k-fold validation k times.
         list_rmse = []
         list_ratio = []  # Ratio of predictions.
-        for i in range(self.k):
-            print "Validation set", i, "started."
-            recommender.fit(self.list_ratings_rest[i])
+        if run_all:
+            for i in range(self.k):
+                print "Validation set", i, "started."
+                recommender.fit(self.list_ratings_rest[i])
+                #print 'v', self.list_ratings_val[i]
+                (rmse, ratio) = self.find_rmse(recommender,
+                                                self.list_ratings_val[i])
+                list_rmse.append(rmse)
+                list_ratio.append(ratio)
+        else:
+            print "Validation set", 0, "started."
+            recommender.fit(self.list_ratings_rest[0])
             #print 'v', self.list_ratings_val[i]
             (rmse, ratio) = self.find_rmse(recommender,
-                                            self.list_ratings_val[i])
+                                            self.list_ratings_val[0])
             list_rmse.append(rmse)
             list_ratio.append(ratio)
         return list_rmse, list_ratio
@@ -235,11 +238,17 @@ def main():
     """
     To run the recommender model.
     """
+    # Filenames needed.
+    ratings_filename = "../data/reviews" + sys.argv[1]
+    network_filename = "../data/network" + sys.argv[1] + "b.csv"
+    #ratings_filename = "sample_ratings"
+    #network_filename = "sample_network"
+
     # Create the Validator object.
     # k: number of folds for cross validation.
     k = 5
     val = Validator(ratings_filename, network_filename, k, 0.)
-    print val.get_baseline()
+    #print val.get_baseline()
 
     """
     mf = Matrix_Factorization(n_features = 10,
@@ -268,7 +277,6 @@ def main():
     for rlimit in [1,2,3,4,5]:
         for flimit in [0.2, 0.3, 0.4, 0.5]:
             for weight in [0.5, 0.6, 0.7, 0.8]:
-    """
     for rlimit in range(30, 101, 10):
         for flimit in [0.7]:
             for weight in [1.0]:
@@ -283,7 +291,22 @@ def main():
     #my_meta_predictor = MetaPredictor(my_mf_rec_engine, my_pop_rec_engine,\
     #    criteria=5)
     #my_meta_predictor.fit(ratings_mat)
+    """
 
+    llimit1 = 3
+    ulimit1 = 30
+    llimit2 = 10
+    ulimit2 = 0
+    weight = 1
+    uf = Using_Friends(val.get_network(),
+        n_ratings_lower_limit1=llimit1, n_ratings_upper_limit1=ulimit1,
+        n_ratings_lower_limit2=llimit2, n_ratings_upper_limit2=ulimit2,
+        weight_for_depth2=weight)
+    (val_results, ratios) = val.validate(uf, run_all=False)
+    print 'validation results: '
+    print 'r', llimit1, ulimit1, weight, ratios, np.mean(ratios)
+    print 'e', llimit1, ulimit1, weight, val_results,\
+        np.mean(val_results)
 
 
 if __name__ == "__main__":
