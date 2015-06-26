@@ -1,7 +1,7 @@
 # To run the recommender system.
 
 # by Suhan Ree
-# last edited on 06-22-2015
+# last edited on 06-26-2015
 
 import sys
 import pandas as pd
@@ -11,12 +11,6 @@ import itertools
 from factorization import Matrix_Factorization  # , MetaPredictor
 from using_friends import Using_Friends
 from my_utilities import read_dictlist_from_file, reindex_graph
-
-# Filenames needed.
-ratings_filename = "../data/reviews" + sys.argv[1]
-network_filename = "../data/network" + sys.argv[1] + "b.csv"
-#ratings_filename = "sample_ratings"
-#network_filename = "sample_network"
 
 
 class Validator():
@@ -276,10 +270,9 @@ def main():
     """
     To run the recommender model.
     """
-    # Create the Validator object.
-    # k: number of folds for cross validation.
-    k = 5
-    val = Validator(ratings_filename, network_filename, k, 0.)
+    #ratings_filename = "sample_ratings"
+    #network_filename = "sample_network"
+
     """
     my_rec = Matrix_Factorization(n_features = 10,
                         learn_rate = 0.1,
@@ -292,20 +285,34 @@ def main():
 
     """
     # Creating an object for my model
-    nfeat = int(sys.argv[2])
-    user_bias = bool(sys.argv[3])
-    item_bias = bool(sys.argv[4])
-    for lrate in [0.0011, 0.0013, 0.0015, 0.0017]:
-        for rparam in [0.09, 0.11, 0.13, 0.15, 0.17]:
-            my_rec = Matrix_Factorization(n_features = nfeat,
-                                learn_rate = lrate,
-                                regularization_param = rparam,
-                                optimizer_pct_improvement_criterion=2,
-                                user_bias_correction = user_bias,
-                                item_bias_correction = item_bias)
-            val_results = val.validate(my_rec)
-            print 'validation results: '
-            print nfeat, lrate, rparam, val_results, np.mean(val_results)
+    input_filename = sys.argv[1]
+    user_bias = bool(sys.argv[2])
+    item_bias = bool(sys.argv[3])
+    nums = []
+    with open(input_filename, 'r') as f:
+        for line in f:
+            nums.append(line.strip().split(" "))
+
+    for city in nums[0]:
+        # Filenames needed.
+        ratings_filename = "../data/reviews" + city
+        network_filename = "../data/network" + city + "b.csv"
+        # Create the Validator object.
+        # k: number of folds for cross validation.
+        k = 5
+        val = Validator(ratings_filename, network_filename, k, 0.)
+        for nfeat in map(int, nums[1]):
+            for lrate in map(float, nums[2]):
+                for rparam in map(float, nums[3]):
+                    my_rec = Matrix_Factorization(n_features = nfeat,
+                                        learn_rate = lrate,
+                                        regularization_param = rparam,
+                                        optimizer_pct_improvement_criterion=2,
+                                        user_bias_correction = user_bias,
+                                        item_bias_correction = item_bias)
+                    val_results = val.validate(my_rec)
+                    print 'validation results: '
+                    print nfeat, lrate, rparam, val_results, np.mean(val_results)
     """
     for rlimit in [1,2,3,4,5]:
         for flimit in [0.2, 0.3, 0.4, 0.5]:
@@ -326,11 +333,15 @@ def main():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
-        print "Usage: python run_recommender.py 0 8 0 1"
-        print "     0 is a city number (0: Phoenix, 1: Las Vegas, 3: Montreal)"
-        print "     8 is n_feature, the number of latent features"
-        print "     1 if bias (user) is considered, 0 otherwise"
-        print "     1 if bias (item) is considered, 0 otherwise"
+    if len(sys.argv) != 4:
+        print "Usage: python run_recommender.py input 0 1"
+        print "     input: input filename"
+        print "         first line: list of cities"
+        print "         second line: list of n_feature's"
+        print "         third line: list of learning rates"
+        print "         fourth line: list of regularization parameter"
+        print "     0: user_bias (1 if True)"
+        print "     1: item_bias (1 if True)"
+
         sys.exit()
     main()
