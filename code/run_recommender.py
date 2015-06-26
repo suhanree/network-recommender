@@ -295,12 +295,12 @@ def main():
     nfeat = int(sys.argv[2])
     user_bias = bool(sys.argv[3])
     item_bias = bool(sys.argv[4])
-    for lrate in [0.0005, 0.001, 0.003, 0.005, 0.007, 0.009]:
-        for rparam in [0.005, 0.01, 0.03, 0.05, 0.07]:
+    for lrate in [0.0011, 0.0013, 0.0015, 0.0017]:
+        for rparam in [0.09, 0.11, 0.13, 0.15, 0.17]:
             my_rec = Matrix_Factorization(n_features = nfeat,
                                 learn_rate = lrate,
                                 regularization_param = rparam,
-                                optimizer_pct_improvement_criterion=3,
+                                optimizer_pct_improvement_criterion=2,
                                 user_bias_correction = user_bias,
                                 item_bias_correction = item_bias)
             val_results = val.validate(my_rec)
