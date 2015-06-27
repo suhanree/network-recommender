@@ -70,14 +70,8 @@ class Validator():
         # And ratings matrices for all folds and outside of folds will be
         # stored in lists of matrices.
         self.n_reviews = ratings_contents.shape[0]
-        fold_number = []  # Fold number for each review. (-1: for test set)
-        for _ in xrange(self.n_reviews):
-            if np.random.rand() < self.test_ratio:
-                fold_number.append(-1)
-            else:
-                fold_number.append(np.random.randint(self.k))
 
-        count = 0
+        rating_dict = {}  # dict to store ratings
         for _, row in ratings_contents.iterrows():
             u_temp = int(row.user_id)
             i_temp = int(row.item_id)
@@ -89,7 +83,27 @@ class Validator():
                 i_id += 1
             uu = self.users_id_map[u_temp]
             ii = self.items_id_map[i_temp]
+            pair = (uu, ii)
             rating = float(row.rating)
+
+            if pair not in rating_dict:
+                rating_dict[pair] = [rating]
+            else:
+                rating_dict[pair].append(rating)
+
+        # Assigning sets for cross-validations.
+        fold_number = []  # Fold number for each review. (-1: for test set)
+        for _ in xrange(len(rating_dict)):
+            if np.random.rand() < self.test_ratio:
+                fold_number.append(-1)
+            else:
+                fold_number.append(np.random.randint(self.k))
+        count = 0
+        for pair in rating_dict:
+            (uu, ii) = pair
+            # In case there are multiple ratings for the same (user, business)
+            # pair, take the average.
+            rating = np.mean(rating_dict[pair])  
             if fold_number[count] == -1:
                 self.ratings_test[uu, ii] = rating
             else:
