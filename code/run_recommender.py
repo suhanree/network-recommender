@@ -1,7 +1,7 @@
 # To run the recommender system.
 
 # by Suhan Ree
-# last edited on 06-22-2015
+# last edited on 06-26-2015
 
 import sys
 import pandas as pd
@@ -11,12 +11,6 @@ import itertools
 from factorization import Matrix_Factorization  # , MetaPredictor
 from using_friends import Using_Friends
 from my_utilities import read_dictlist_from_file, reindex_graph
-
-# Filenames needed.
-ratings_filename = "../data/reviews" + sys.argv[1]
-network_filename = "../data/network" + sys.argv[1] + "b.csv"
-#ratings_filename = "sample_ratings"
-#network_filename = "sample_network"
 
 
 class Validator():
@@ -76,14 +70,8 @@ class Validator():
         # And ratings matrices for all folds and outside of folds will be
         # stored in lists of matrices.
         self.n_reviews = ratings_contents.shape[0]
-        fold_number = []  # Fold number for each review. (-1: for test set)
-        for _ in xrange(self.n_reviews):
-            if np.random.rand() < self.test_ratio:
-                fold_number.append(-1)
-            else:
-                fold_number.append(np.random.randint(self.k))
 
-        count = 0
+        rating_dict = {}  # dict to store ratings
         for _, row in ratings_contents.iterrows():
             u_temp = int(row.user_id)
             i_temp = int(row.item_id)
@@ -95,7 +83,27 @@ class Validator():
                 i_id += 1
             uu = self.users_id_map[u_temp]
             ii = self.items_id_map[i_temp]
+            pair = (uu, ii)
             rating = float(row.rating)
+
+            if pair not in rating_dict:
+                rating_dict[pair] = [rating]
+            else:
+                rating_dict[pair].append(rating)
+
+        # Assigning sets for cross-validations.
+        fold_number = []  # Fold number for each review. (-1: for test set)
+        for _ in xrange(len(rating_dict)):
+            if np.random.rand() < self.test_ratio:
+                fold_number.append(-1)
+            else:
+                fold_number.append(np.random.randint(self.k))
+        count = 0
+        for pair in rating_dict:
+            (uu, ii) = pair
+            # In case there are multiple ratings for the same (user, business)
+            # pair, take the average.
+            rating = np.mean(rating_dict[pair])  
             if fold_number[count] == -1:
                 self.ratings_test[uu, ii] = rating
             else:
@@ -132,7 +140,7 @@ class Validator():
         return
 
 
-    def validate(self, recommender, use_average=False):
+    def validate(self, recommender, use_average=False, run_all=True):
         """
         Perform the K-fold validation using k folds (k times)
         Here we already have split ratings for k folds.
@@ -146,16 +154,29 @@ class Validator():
         # Perform k-fold validation k times.
         list_rmse = []
         list_ratio = []  # Ratio of predictions.
-        for i in range(self.k):
-            print "Validation set", i, "started."
-            recommender.fit(self.list_ratings_rest[i])
+        if run_all:
+            for i in range(self.k):
+                print "Validation set", i, "started."
+                recommender.fit(self.list_ratings_rest[i])
+                if use_average:
+                    prediction = recommender.pred_average(False, True)
+                    (rmse, ratio) = self.find_rmse_prediction(prediction,
+                                                    self.list_ratings_val[i])
+                else:
+                    (rmse, ratio) = self.find_rmse(recommender,
+                                                self.list_ratings_val[i])
+                list_rmse.append(rmse)
+                list_ratio.append(ratio)
+        else:
+            print "Validation set", 0, "started."
+            recommender.fit(self.list_ratings_rest[0])
             if use_average:
                 prediction = recommender.pred_average(False, True)
                 (rmse, ratio) = self.find_rmse_prediction(prediction,
-                                                self.list_ratings_val[i])
+                                                self.list_ratings_val[0])
             else:
                 (rmse, ratio) = self.find_rmse(recommender,
-                                            self.list_ratings_val[i])
+                                            self.list_ratings_val[0])
             list_rmse.append(rmse)
             list_ratio.append(ratio)
         return list_rmse, list_ratio
@@ -276,10 +297,9 @@ def main():
     """
     To run the recommender model.
     """
-    # Create the Validator object.
-    # k: number of folds for cross validation.
-    k = 5
-    val = Validator(ratings_filename, network_filename, k, 0.)
+    #ratings_filename = "sample_ratings"
+    #network_filename = "sample_network"
+
     """
     my_rec = Matrix_Factorization(n_features = 10,
                         learn_rate = 0.1,
@@ -292,20 +312,34 @@ def main():
 
     """
     # Creating an object for my model
-    nfeat = int(sys.argv[2])
-    user_bias = bool(sys.argv[3])
-    item_bias = bool(sys.argv[4])
-    for lrate in [0.0011, 0.0013, 0.0015, 0.0017]:
-        for rparam in [0.09, 0.11, 0.13, 0.15, 0.17]:
-            my_rec = Matrix_Factorization(n_features = nfeat,
-                                learn_rate = lrate,
-                                regularization_param = rparam,
-                                optimizer_pct_improvement_criterion=2,
-                                user_bias_correction = user_bias,
-                                item_bias_correction = item_bias)
-            val_results = val.validate(my_rec)
-            print 'validation results: '
-            print nfeat, lrate, rparam, val_results, np.mean(val_results)
+    input_filename = sys.argv[1]
+    user_bias = bool(sys.argv[2])
+    item_bias = bool(sys.argv[3])
+    nums = []
+    with open(input_filename, 'r') as f:
+        for line in f:
+            nums.append(line.strip().split(" "))
+
+    for city in nums[0]:
+        # Filenames needed.
+        ratings_filename = "../data/reviews" + city
+        network_filename = "../data/network" + city + "b.csv"
+        # Create the Validator object.
+        # k: number of folds for cross validation.
+        k = 5
+        val = Validator(ratings_filename, network_filename, k, 0.)
+        for nfeat in map(int, nums[1]):
+            for lrate in map(float, nums[2]):
+                for rparam in map(float, nums[3]):
+                    my_rec = Matrix_Factorization(n_features = nfeat,
+                                        learn_rate = lrate,
+                                        regularization_param = rparam,
+                                        optimizer_pct_improvement_criterion=2,
+                                        user_bias_correction = user_bias,
+                                        item_bias_correction = item_bias)
+                    val_results = val.validate(my_rec)
+                    print 'validation results: '
+                    print nfeat, lrate, rparam, val_results, np.mean(val_results)
     """
     for rlimit in [1,2,3,4,5]:
         for flimit in [0.2, 0.3, 0.4, 0.5]:
@@ -326,11 +360,15 @@ def main():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
-        print "Usage: python run_recommender.py 0 8 0 1"
-        print "     0 is a city number (0: Phoenix, 1: Las Vegas, 3: Montreal)"
-        print "     8 is n_feature, the number of latent features"
-        print "     1 if bias (user) is considered, 0 otherwise"
-        print "     1 if bias (item) is considered, 0 otherwise"
+    if len(sys.argv) != 4:
+        print "Usage: python run_recommender.py input 0 1"
+        print "     input: input filename"
+        print "         first line: list of cities"
+        print "         second line: list of n_feature's"
+        print "         third line: list of learning rates"
+        print "         fourth line: list of regularization parameter"
+        print "     0: user_bias (1 if True)"
+        print "     1: item_bias (1 if True)"
+
         sys.exit()
     main()

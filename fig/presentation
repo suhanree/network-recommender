@@ -4,3 +4,43 @@
 (2)
     - The big question here is 'can networks improve out predictions in machine
     learning algorithms?'
+    - Specifically, here the question I am asking is 'If we know friend
+    relations between users, can we improve recommendation systems?'
+    - The answer is apparently yes, but I'd like to explore how.
+(3)
+    - I use data from Yelp dataset challenge.
+    - There are 1.6M reveiws, 61K businesses from 10 cities, and 366K users
+    with social network, which has 2.9M edges (friendship relations).
+(4)
+    - At first, I had to find 10 communuties, here cities.
+    - Businesses are classified first, and then users based on their reviews.
+    - But there are 5% of users who left reviews on multiple cities. In that
+    case, I looked at their friends.
+(5)
+    - This graph tells you how they are distributed over 10 cities.
+(6)
+    - Now we can analyze data city by city.
+(7)
+    - The simplest approach we can do is using friends.
+    - If we want to predict a rating for (user, business) pair, we only look at
+    how this user's friends rated the given business.
+    - This model will be compared with other models.
+(8)
+    - Then we can ask: will that work?
+    - We can see that if we look at this graph.
+    - x is the number of friends considered and use the average of thier
+    ratings as predictions. Then RMSE (Root Mean Squared Error) becomes lower
+    than the baseline model when that number is greater than 3.
+    - The baseline model just uses the average rating for the
+    business as a prediction. 
+(9) 
+    - How we evaluate models? K-fold cross validation has been used.
+(10)
+    - Here I am showing some preliminary results.
+
+(11)
+    - Social networks can be useful.
+    - There are many ways to incorporate them.
+    - Hybrid models should be considered to have better results.
+    - There are many possible applications since there are available social
+    networks.
