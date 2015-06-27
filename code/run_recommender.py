@@ -140,7 +140,7 @@ class Validator():
         return
 
 
-    def validate(self, recommender, use_average=False):
+    def validate(self, recommender, use_average=False, run_all=True):
         """
         Perform the K-fold validation using k folds (k times)
         Here we already have split ratings for k folds.
@@ -154,16 +154,29 @@ class Validator():
         # Perform k-fold validation k times.
         list_rmse = []
         list_ratio = []  # Ratio of predictions.
-        for i in range(self.k):
-            print "Validation set", i, "started."
-            recommender.fit(self.list_ratings_rest[i])
+        if run_all:
+            for i in range(self.k):
+                print "Validation set", i, "started."
+                recommender.fit(self.list_ratings_rest[i])
+                if use_average:
+                    prediction = recommender.pred_average(False, True)
+                    (rmse, ratio) = self.find_rmse_prediction(prediction,
+                                                    self.list_ratings_val[i])
+                else:
+                    (rmse, ratio) = self.find_rmse(recommender,
+                                                self.list_ratings_val[i])
+                list_rmse.append(rmse)
+                list_ratio.append(ratio)
+        else:
+            print "Validation set", 0, "started."
+            recommender.fit(self.list_ratings_rest[0])
             if use_average:
                 prediction = recommender.pred_average(False, True)
                 (rmse, ratio) = self.find_rmse_prediction(prediction,
-                                                self.list_ratings_val[i])
+                                                self.list_ratings_val[0])
             else:
                 (rmse, ratio) = self.find_rmse(recommender,
-                                            self.list_ratings_val[i])
+                                            self.list_ratings_val[0])
             list_rmse.append(rmse)
             list_ratio.append(ratio)
         return list_rmse, list_ratio
