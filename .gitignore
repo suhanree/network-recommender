@@ -3,3 +3,5 @@ data/
 **/.ropeproject
 run*/
 .ipynb_checkpoints/
+*odp
+*odp#
