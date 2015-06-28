@@ -1,5 +1,6 @@
 # Extracting netwrok data from the user json file.
 
+# Filename: extract_network.py
 # by Suhan Ree
 # last edited on 06-17-2015
 
@@ -10,7 +11,10 @@ from my_utilities import read_json_file
 from my_utilities import write_dictlist_to_file, write_dict_to_file
 
 # Filename for the pickled data of user_id and numbered id map.
+# inputs:
 userdata_filename = '../data/yelp_academic_dataset_user.json'
+
+# outputs:
 pickle_filename = '../data/user_id_map.pkl'
 network_filename = '../data/network.csv'
 degree_filename = '../data/degrees'

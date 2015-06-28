@@ -1,11 +1,18 @@
-# Make a joined dataframe from user, business, and review json files..
-# Filename: make_joined_dataframe.py
+# (1) Make dataframes from {user, business, and review} json files,
+#       and store them as a pickled file.
+# (2) Decide what city each business belongs to based on their locations.
+#       kmeans classification will be used.
+# (3) Using above information, each review will be associated by one city.
+# (4) Using degree information already obtained, drop all users with no
+#   friend, because we are focusing on users in a social network.
+#   New reduced dataframes will be stored as a pickled file (reduced dataframes)
+# (5) It will store business category for all businesses for future references.
 
+# Filename: make_dataframes.py
 # by Suhan Ree
 # last edited on 06-18-2015
 
 import pandas as pd
-# import numpy as np
 import json
 import os
 import cPickle as pickle
@@ -15,18 +22,20 @@ from sklearn.cluster import KMeans
 from my_utilities import read_json_file, find_id_map, write_dictlist_to_file
 
 # Filename for the pickled data of user_id and numbered id map.
+# inputs:
 user_filename = '../data/yelp_academic_dataset_user.json'
-user_pickle_filename = '../data/user_id_map.pkl'
 business_filename = '../data/yelp_academic_dataset_business.json'
-business_pickle_filename = '../data/business_id_map.pkl'
 review_filename = '../data/yelp_academic_dataset_review_notext.json'
 degree_filename = '../data/degrees'
 
-dataframes_pickle_filename = '../data/dataframes.pkl'
+# outputs:
+user_pickle_filename = '../data/user_id_map.pkl'            # input (if exists)
+business_pickle_filename = '../data/business_id_map.pkl'    # input (if exists)
+dataframes_pickle_filename = '../data/dataframes.pkl'       # input (if exists)
 reduced_dataframes_pickle_filename = '../data/reduced_dataframes.pkl'
-categories_business_filename = '../data/categories_business'
 review_by_city_dataframe_pickle_filename =\
     '../data/review_by_city_dataframe.pkl'
+categories_business_filename = '../data/categories_business'
 
 
 def main():

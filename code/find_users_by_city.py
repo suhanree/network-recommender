@@ -1,6 +1,9 @@
-# Find the users for each given city, and find degree distribution
-# of these users from this information.
-# Here users without any friend (192,621 out of 366,715) will not
+# (1) Find the users for each given city based on where each user left reviews.
+# (2) For users who left users in multiple users (~5%), use their friends to
+#       determine the city using majority. (If tied, choose randomly among
+#       tied cities.)
+# (3) Find degree distribution and network info for each city.
+# Note: Here users without any friend (192,621 out of 366,715) will not
 # be used for this analysis.
 
 # by Suhan Ree
@@ -16,11 +19,12 @@ from my_utilities import read_dictlist_from_file, write_ratings_to_file
 from my_utilities import convert_to_nx, convert_from_nx
 
 # Filename for the pickled data of reviews with city info.
+# inputs:
 review_by_city_dataframe_pickle_filename =\
     '../data/review_by_city_dataframe.pkl'
 network_filename = '../data/network.csv'
-degree_filename = '../data/network.csv'
 
+# outputs:
 user_by_city_filename = '../data/user_by_city'
 network_city_filename = '../data/network%s.csv'
 degree_city_filename = '../data/degrees%s'
