@@ -23,8 +23,9 @@ def main():
     #network_filename = "sample_network"
 
     input_filename = sys.argv[1]
-    user_bias = bool(sys.argv[2])
-    item_bias = bool(sys.argv[3])
+    user_bias = bool(int(sys.argv[2]))
+    item_bias = bool(int(sys.argv[3]))
+    print user_bias, item_bias
     nums = []
     with open(input_filename, 'r') as f:
         for line in f:
@@ -48,9 +49,10 @@ def main():
                                         optimizer_pct_improvement_criterion=2,
                                         user_bias_correction = user_bias,
                                         item_bias_correction = item_bias)
-                    val_results = val.validate(my_rec)
+                    (val_results, ratios) = val.validate(my_rec, run_all=False)
                     print 'validation results: '
-                    print nfeat, lrate, rparam, val_results, np.mean(val_results)
+                    print city, nfeat, lrate, rparam, ratios, val_results, \
+                        np.mean(val_results)
 
 
 if __name__ == "__main__":

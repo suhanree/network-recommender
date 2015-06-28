@@ -1,6 +1,7 @@
 # Define the Validator class.
 # It reads the input file, arrange validation sets (for k-fold validation), and
 # find RMSE's.
+# Here id's are mapped again, to make user ID's consecutive for each city.
 
 # Filename: validator.py
 # by Suhan Ree

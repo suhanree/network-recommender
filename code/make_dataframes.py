@@ -25,7 +25,7 @@ from my_utilities import read_json_file, find_id_map, write_dictlist_to_file
 # inputs:
 user_filename = '../data/yelp_academic_dataset_user.json'
 business_filename = '../data/yelp_academic_dataset_business.json'
-review_filename = '../data/yelp_academic_dataset_review_notext.json'
+review_filename = '../data/yelp_academic_dataset_review.json'
 degree_filename = '../data/degrees'
 
 # outputs:
