@@ -5,7 +5,9 @@
 # last edited on 06-27-2015
 
 import sys
+import numpy as np
 
+from validator import Validator
 from using_friends import Using_Friends
 
 
@@ -46,7 +48,11 @@ if __name__ == "__main__":
     if len(sys.argv) != 3:
         print "Usage: python run_recommender2.py input 0"
         print "     input: filename for parameters"
-        print "     0: no prediction, 1: average will be used; when", \
-            "there are not enough ratings from friends."
+        print "         first line: list of cities (separated by space)"
+        print "         second line: list of lower limits (separated by space)"
+        print "         third line: list of upper limits (separated by space)"
+        print "     0: If this value is 0, there will be no prediction, when",\
+        print "there are not enough ratings from friends.",\
+        print "If 1, the item average will be used for prediction."
         sys.exit()
     main()
