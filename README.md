@@ -43,9 +43,11 @@ Then the next question is: how do we incorporate network information into
 recommenders?
 Here I implement
 and analyze the simplest approach of using past ratings of friends for predicting ratings.
+<!--- 
 {% include figure.html src="fig/net_rec2.png" caption="Fig.1. Schmatic diagram
     describing the model" %}
-<!--- ![Fig.1](fig/net_rec2.png) --->
+--->
+![Fig.1](fig/net_rec2.png "Fig.1. Schematic diagram describing the model")
 The Fig.1 describes the method. If a user, named Shaun, has two friends, Jef
 and Vik, who rated a business, named Cafe, we assume that Shaun's rating is
 more likely to be closer to their ratings than the average rating.
