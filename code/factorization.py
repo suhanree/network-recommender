@@ -1,7 +1,7 @@
 # Classes for matrix factorization for recommender system.
 
 # by Suhan Ree
-# last edited on 06-18-2015
+# last edited on 06-22-2015
 
 import numpy as np
 import itertools
@@ -53,7 +53,6 @@ class Matrix_Factorization():
         self.average_bias_item = None
         self.average_rating = 0
 
-
     def fit(self, ratings_mat):
         filename_u = '../data/u.mat'
         filename_v = '../data/v.mat'
@@ -63,8 +62,8 @@ class Matrix_Factorization():
             return
 
         self.ratings_mat = ratings_mat.copy()  # in dok (dictionary) format.
-        self.ratings_mat_coo = ratings_mat.tocoo()  # Converting dok to coo format.
-                          # coo is better for looping over nonzero values.
+        # coo is better for looping over nonzero values (converting to coo).
+        self.ratings_mat_coo = ratings_mat.tocoo()
         self.n_users, self.n_items = ratings_mat.shape
         self.n_rated = self.ratings_mat_coo.row.size
         print "    problem size:", self.n_users, self.n_items, self.n_rated
@@ -84,7 +83,8 @@ class Matrix_Factorization():
                     self.average_bias_user[irow] =\
                         self.ratings_mat_coo.data[nonzero_indices].mean()\
                         - self.average_rating
-                else: self.average_bias_user[irow] = 0
+                else:
+                    self.average_bias_user[irow] = 0
             for irow, icol in itertools.izip(self.ratings_mat_coo.row,
                                              self.ratings_mat_coo.col):
                 self.ratings_mat[irow, icol] -= self.average_bias_user[irow]
@@ -99,7 +99,8 @@ class Matrix_Factorization():
                     self.average_bias_item[icol] =\
                         self.ratings_mat_coo.data[nonzero_indices].mean()\
                         - self.average_rating
-                else: self.average_bias_item[icol] = 0
+                else:
+                    self.average_bias_item[icol] = 0
             for irow, icol in itertools.izip(self.ratings_mat_coo.row,
                                              self.ratings_mat_coo.col):
                 self.ratings_mat[irow, icol] -= self.average_bias_item[icol]
@@ -107,18 +108,16 @@ class Matrix_Factorization():
 
         # Initializing u and v  (they are not sparse)
         self.user_mat = 2 * np.array(
-            np.random.rand(self.n_users * self.n_features)\
-            .reshape([self.n_users, self.n_features])) - 1
+                    np.random.rand(self.n_users * self.n_features)
+                    .reshape([self.n_users, self.n_features])) - 1
         self.item_mat = 2 * np.array(
-            np.random.rand(self.n_items * self.n_features)\
-            .reshape([self.n_features, self.n_items])) - 1
+                    np.random.rand(self.n_items * self.n_features)
+                    .reshape([self.n_features, self.n_items])) - 1
 
         # Iteration starts here.
         optimizer_iteration_count = 0
         pct_improvement = 0
         sse_accum = 0
-        #print("    Optimizaiton Statistics")
-        #print("    Iterations | Mean Squared Error  |  Percent Improvement")
         while ((optimizer_iteration_count < 2) or
                (pct_improvement > self.optimizer_pct_improvement_criterion)):
             old_sse = sse_accum
@@ -139,16 +138,11 @@ class Matrix_Factorization():
                         (error * self.user_mat[irow, k] -
                          self.regularization_param * self.item_mat[k, icol])
             pct_improvement = 100 * (old_sse - sse_accum) / old_sse
-            #print("    %d \t\t %f \t\t %f" % (
-            #    optimizer_iteration_count, sse_accum /\
-            #    self.n_rated, pct_improvement))
             old_sse = sse_accum
             optimizer_iteration_count += 1
         print "    Iteration done in", optimizer_iteration_count, "times."
 
         # prediction matrix (not sparse)
-        #print self.user_mat
-        #print self.item_mat
         self.prediction = np.dot(self.user_mat, self.item_mat)
 
         # average rating added.
@@ -175,7 +169,6 @@ class Matrix_Factorization():
         """
         return self.prediction[user_id, item_id]
 
-
     def find_rating_from_uv(self, user_id, item_id):
         """
         Compute rating from current u and v
@@ -183,13 +176,12 @@ class Matrix_Factorization():
             prediected: float
         """
         rating = np.dot(self.user_mat[user_id, :], self.item_mat[:, item_id])\
-                 + self.average_rating
+            + self.average_rating
         if self.user_bias_correction:
             rating += self.average_bias_user[user_id]
         if self.item_bias_correction:
             rating += self.average_bias_item[item_id]
         return rating
-
 
     def pred_one_user(self, user_id):
         """
@@ -199,7 +191,6 @@ class Matrix_Factorization():
         """
         return self.prediction[user_id]
 
-
     def pred_all(self):
         """
         Predict for all user-item pairs.
@@ -207,7 +198,6 @@ class Matrix_Factorization():
             prediected: np.array (2d)
         """
         return self.prediction
-
 
     def pred_average(self, user_bias=False, item_bias=False):
         """
@@ -228,7 +218,6 @@ class Matrix_Factorization():
                 prediction[:, icol] += self.average_bias_item[icol]
         return prediction
 
-
     def top_n_recs(self, user_id, num):
         """
         Find top items for a given user based on friends.
@@ -244,46 +233,3 @@ class Matrix_Factorization():
             if self.ratings_mat[user_id, icol]:
                 items_predicted[icol] = False
         return np.argsort(pred_output[items_predicted])[-num:][::-1]
-
-
-"""
-class MetaPredictor(object):
-    def __init__(self, recom_svd, recom_pop, criteria=5):
-        self.recom_svd = recom_svd
-        self.recom_pop = recom_pop
-        self.criteria = criteria
-        self.ratings_mat = None
-
-        self.n_users = None
-        self.n_items = None
-
-    def fit(self, ratings_mat):
-        self.ratings_mat = ratings_mat
-        self.n_users, self.n_items = ratings_mat.shape
-
-        self.recom_svd.fit(ratings_mat)
-        self.recom_pop.fit(ratings_mat, '../data/user_group.csv')
-
-    def pred_one_user(self, user_id, report_run_time=False):
-        n_rated_by_user = len(self.ratings_mat[user_id].nonzero()[1])
-        if n_rated_by_user < self.criteria:
-            return self.recom_pop.pred_one_user(user_id,
-                                                report_run_time=report_run_time)
-        else:
-            return self.recom_svd.pred_one_user(user_id,
-                                                report_run_time=report_run_time)
-
-    def pred_all_users(self, report_run_time=False):
-        out = np.zeros((self.n_users, self.n_items))
-        for id in xrange(self.n_users):
-            out[id] = self.pred_one_user(id).reshape(1, -1)
-        return out
-
-    def top_n_recs(self, user_id, n):
-        n_rated_by_user = len(ratings_mat[user_id].nonzero()[1])
-        if n_rated_by_user < self.criteria:
-            return self.recom_pop.top_n_recs(user_id, n)
-        else:
-            return self.recom_svd.top_n_recs(user_id, n)
-        return self.average_ratings[self.sorted_indices][:n]
-"""

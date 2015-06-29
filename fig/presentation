@@ -6,41 +6,54 @@
     learning algorithms?'
     - Specifically, here the question I am asking is 'If we know friend
     relations between users, can we improve recommendation systems?'
-    - The answer is apparently yes, but I'd like to explore how.
+    - The answer is yes, but I'd like to explore how.
 (3)
     - I use data from Yelp dataset challenge.
-    - There are 1.6M reveiws, 61K businesses from 10 cities, and 366K users
+    - There are 1.6M ratings, 61K businesses from 10 cities, and 366K users
     with social network, which has 2.9M edges (friendship relations).
 (4)
-    - At first, I had to find 10 communuties, here cities.
-    - Businesses are classified first, and then users based on their reviews.
-    - But there are 5% of users who left reviews on multiple cities. In that
-    case, I looked at their friends.
+    - I divided the dataset into 10 subsets based on their cities,
+    because I'd like to analyze data city by city.
+    - I also found subnetworks of cities like shown here.
 (5)
-    - This graph tells you how they are distributed over 10 cities.
+    - Let's assume we are given this ratings.
+    - The ratings data is represented here. These are users and businesses.
+    - There are past ratings, but most of them are blank (99%), and
+    recommenders try to predict these ratings. There are many ways to do that.
+    - The network model I implemented here is the simplest one.
+    - Let's say we have a user named Shaun, and we want to predict his rating
+    for the business named Ovo. Luckily he has friends who really likes the
+    place and rated the business alreaady. The assumption here is that frineds'
+    ratings will be more likely to be closer to his real rating.
 (6)
-    - Now we can analyze data city by city.
-(7)
-    - The simplest approach we can do is using friends.
-    - If we want to predict a rating for (user, business) pair, we only look at
-    how this user's friends rated the given business.
-    - This model will be compared with other models.
-(8)
     - Then we can ask: will that work?
     - We can see that if we look at this graph.
-    - x is the number of friends considered and use the average of thier
-    ratings as predictions. Then RMSE (Root Mean Squared Error) becomes lower
-    than the baseline model when that number is greater than 3.
-    - The baseline model just uses the average rating for the
-    business as a prediction. 
-(9) 
-    - How we evaluate models? K-fold cross validation has been used.
-(10)
-    - Here I am showing some preliminary results.
-
-(11)
+    - x is the number of ratings by friends or friends of friends.
+    - Then RMSE (Root Mean Squared Error) for this subset of ratings becomes
+    lower as you increase the number.
+    - And the friends of friends give us slightly higher RMSE's.
+    - Just to compare the standard deviation of real ratings are given here.
+(7) 
+    - Now we compare RMSE's with different models.
+    - RMSE's are found using K-fold cross validations.
+    - Baseline is the standard deviation of the real ratings for different
+    cities.
+    - CF is the results from collaborative filtering by finding latent factors
+    using matrix factorization.
+    - And this green dots represent RMSE's for subsets of data when there are
+    more than two ratings by friends. RMSE's are significantly lower.
+(8)
     - Social networks can be useful.
-    - There are many ways to incorporate them.
-    - Hybrid models should be considered to have better results.
-    - There are many possible applications since there are available social
-    networks.
+    - Hybrid models should be considered.
+    - Many attempts are being made in academia and industry.
+    - There are many possible applications.
+
+
+
+Additional mentions.
+    - We can use user and business attributes, called content-based.
+    - We can use past ratings, but instead of using averages of past ratings,
+    we can group users based on attributes (demographic filtering) or
+    similarities of past ratings (collaborative filtering).
+    - One of the popular method is using matrix factorization techniques to
+    find latent factors.

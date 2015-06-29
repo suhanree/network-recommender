@@ -39,7 +39,8 @@ class Validator():
 
         # Read the files.
         ratings_contents = pd.read_csv(ratings_filename,
-                            names=['user_id', 'item_id', 'rating'], header=None)
+                                       names=['user_id', 'item_id', 'rating'],
+                                       header=None)
 
         # Creating matrices.
         # ratings_mat: ratings info on a matrix
@@ -54,8 +55,7 @@ class Validator():
         self.list_ratings_rest = []
         for i in range(self.k):
             self.list_ratings_val.append(sparse.dok_matrix((u_size, i_size)))
-            self.list_ratings_rest.append(sparse.dok_matrix((u_size,
-                                                                 i_size)))
+            self.list_ratings_rest.append(sparse.dok_matrix((u_size, i_size)))
         # Since no arithmetic will be used for these matrices,
         # dok_matrix (dictionary of keys) will be used.
 
@@ -115,31 +115,16 @@ class Validator():
                     else:  # Outside fold.
                         self.list_ratings_rest[j][uu, ii] = rating
             count += 1
-        """
-        for j in range(k):
-            print j, len(self.list_ratings_val[j])
-            print j, len(self.list_ratings_rest[j])
-        print len(self.ratings_test)
-        print len(self.ratings_train)
-        print self.users_id_map
-        print self.items_id_map
-        print 'test', self.ratings_test
-        print 'train', self.ratings_train
-        for i in range(self.k):
-            print 'val', self.list_ratings_val[i]
-            print 'rest', self.list_ratings_rest[i]
-        """
 
         # Now read the network.
         temp_network = read_dictlist_from_file(network_filename)
         # But we need to map ID's into consecutive integers.
-        self.my_network, users_id_map, not_counted = reindex_graph(temp_network,
-                                                            self.users_id_map)
+        self.my_network, users_id_map, not_counted =\
+            reindex_graph(temp_network, self.users_id_map)
         if not_counted > 0:
             print "    There are some users not counted for the network:", \
                 not_counted
         return
-
 
     def validate(self, recommender, use_average=False, run_all=True):
         """
@@ -161,11 +146,12 @@ class Validator():
                 recommender.fit(self.list_ratings_rest[i])
                 if use_average:
                     prediction = recommender.pred_average(False, True)
-                    (rmse, ratio) = self.find_rmse_prediction(prediction,
-                                                    self.list_ratings_val[i])
+                    (rmse, ratio) =\
+                        self.find_rmse_prediction(prediction,
+                                                  self.list_ratings_val[i])
                 else:
-                    (rmse, ratio) = self.find_rmse(recommender,
-                                                self.list_ratings_val[i])
+                    (rmse, ratio) =\
+                        self.find_rmse(recommender, self.list_ratings_val[i])
                 list_rmse.append(rmse)
                 list_ratio.append(ratio)
         else:
@@ -173,15 +159,15 @@ class Validator():
             recommender.fit(self.list_ratings_rest[0])
             if use_average:
                 prediction = recommender.pred_average(False, True)
-                (rmse, ratio) = self.find_rmse_prediction(prediction,
-                                                self.list_ratings_val[0])
+                (rmse, ratio) =\
+                    self.find_rmse_prediction(prediction,
+                                              self.list_ratings_val[0])
             else:
-                (rmse, ratio) = self.find_rmse(recommender,
-                                            self.list_ratings_val[0])
+                (rmse, ratio) =\
+                    self.find_rmse(recommender, self.list_ratings_val[0])
             list_rmse.append(rmse)
             list_ratio.append(ratio)
         return list_rmse, list_ratio
-
 
     def find_test_rmse(self, recommender):
         """
@@ -194,7 +180,6 @@ class Validator():
         recommender = recommender.fit(self.ratings_train)
         (rmse, ratio) = self.find_rmse(recommender, self.ratings_test)
         return (rmse, ratio)
-
 
     def find_rmse(self, recommender, ratings):
         """
@@ -216,20 +201,16 @@ class Validator():
         n_not_predicted = 0
         n_predicted = 0
         for irow, icol, val in itertools.izip(mat.row, mat.col, mat.data):
-            #print irow, icol, val, recommender.pred_one_rating(irow, icol)
             predicted = recommender.pred_one_rating(irow, icol)
-            #print irow, icol, val-predicted
             if predicted > 0.0001:
                 squared_sum += (val - predicted)**2
                 n_predicted += 1
             else:
                 n_not_predicted += 1
-            #print irow, icol, val, recommender.pred_one_rating(irow, icol)
         if n_predicted == 0:
             return (None, None)
         else:
             return np.sqrt(squared_sum/n_predicted), n_predicted/float(n_total)
-
 
     def find_rmse_prediction(self, prediction, ratings):
         """
@@ -261,7 +242,6 @@ class Validator():
         else:
             return np.sqrt(squared_sum/n_predicted), n_predicted/float(n_total)
 
-
     def get_baseline(self):
         """
         Find the baseline RMSE using just averages, which is just the standard
@@ -272,20 +252,17 @@ class Validator():
         """
         return self.ratings_train.tocoo().data.std()
 
-
     def get_network(self):
         """
         Return the network in a dict of lists
         """
         return self.my_network
 
-
     def get_matrix_train(self):
         """
         Return the ratigns matrix of a train set.
         """
         return self.ratings_train
-
 
     def run_fit(self, model):
         """

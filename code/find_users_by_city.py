@@ -6,6 +6,7 @@
 # Note: Here users without any friend (192,621 out of 366,715) will not
 # be used for this analysis.
 
+# Filename: find_users_by_city.py
 # by Suhan Ree
 # last edited on 06-18-2015
 
@@ -65,8 +66,8 @@ def find_city(user_id, user_cities, friends, user_city_int):
     if len(arg) == 1:
         return (user_cities[arg[0]], 0)  # 0 means not randomly chosen.
     else:
+        # 1 means the city is randomly chosen.
         return (user_cities[arg[np.random.randint(len(arg))]], 1)
-            # 1 means the city is randomly chosen.
 
 
 def main():

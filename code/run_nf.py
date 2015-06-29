@@ -15,8 +15,6 @@ def main():
     """
     To run the UF model.
     """
-    #ratings_filename = "sample_ratings"
-    #network_filename = "sample_network"
 
     # k: number of folds for cross validation.
     k = 10
@@ -52,7 +50,7 @@ if __name__ == "__main__":
         print "         second line: list of lower limits (separated by space)"
         print "         third line: list of upper limits (separated by space)"
         print "     0: If this value is 0, there will be no prediction, when",\
-        print "there are not enough ratings from friends.",\
-        print "If 1, the item average will be used for prediction."
+            "there are not enough ratings from friends.",\
+            "If 1, the item average will be used for prediction."
         sys.exit()
     main()

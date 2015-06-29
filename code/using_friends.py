@@ -1,5 +1,6 @@
 # Classes that usese friends for recommendations.
 
+# Filename: using_friends.py
 # by Suhan Ree
 # last edited on 06-21-2015
 
@@ -36,9 +37,9 @@ class Using_Friends():
         self.my_network = my_network
         self.my_friends = {}  # will be found in fit method (dict of sets).
         self.my_friends2 = {}  # {friends of friends} - {friends} (dict of sets)
-                                # (store only additional friends).
-        self.rows_nonzero = None  # Rows with nonzero items given an item
-                                # (list of lists).
+        # Only additional friends will be stored.
+        # Rows with nonzero items given an item (list of lists).
+        self.rows_nonzero = None
         self.average_ratings_item = None
 
         self.n_users = None
@@ -55,16 +56,14 @@ class Using_Friends():
             else:
                 self.my_friends[user_id] = set(self.my_network[user_id])
         return
-                            
 
     def fit(self, ratings_mat):
         self.ratings_mat = ratings_mat.copy()  # in dok (dictionary) format.
-        self.ratings_mat_coo = ratings_mat.tocoo()  # Converting to coo format.
-                                 # coo is better for looping over nonzero values.
+        # coo is better for looping over nonzero values (converting to coo).
+        self.ratings_mat_coo = ratings_mat.tocoo()
         self.n_users, self.n_items = ratings_mat.shape
         self.n_rated = self.ratings_mat_coo.row.size
         print "    problem size:", self.n_users, self.n_items, self.n_rated
-
 
         # Here we also find rows with non-zero ratings for given item.
         # It will be more efficient for predictions to have these ready
@@ -74,8 +73,8 @@ class Using_Friends():
             self.rows_nonzero.append([])
         ratings_sum = np.zeros(self.n_items)
         for irow, icol, val in itertools.izip(self.ratings_mat_coo.row,
-                                         self.ratings_mat_coo.col,
-                                         self.ratings_mat_coo.data):
+                                              self.ratings_mat_coo.col,
+                                              self.ratings_mat_coo.data):
             self.rows_nonzero[icol].append(irow)
             ratings_sum[icol] += val
 
@@ -84,7 +83,6 @@ class Using_Friends():
         for icol in xrange(self.n_items):
             self.average_ratings_item[icol] =\
                 ratings_sum[icol] / len(self.rows_nonzero[icol])
-        #print self.average_ratings_item
         """
         # For test purpose.
         with open('ratings_by_item', 'w') as f:
@@ -103,10 +101,10 @@ class Using_Friends():
                             ratings_friends2.append(int(self.ratings_mat[user,
                                         icol]))
                 f.write(
-                        str(int(self.ratings_mat[irow, icol])) + ' ' + 
+                        str(int(self.ratings_mat[irow, icol])) + ' ' +
                         str(np.mean(ratings_all)) + ' ' +
                         str(np.mean(ratings_friends)) + ' ' +
-                        str(np.mean(ratings_friends2)) + ' ' + 
+                        str(np.mean(ratings_friends2)) + ' ' +
                         str(len(self.rows_nonzero[icol])-1) + ' ' +
                         str(len(ratings_friends)) + ' ' +
                         str(len(ratings_friends2)) + ' ' +
@@ -117,11 +115,8 @@ class Using_Friends():
                 f.write( ' '.join(map(str, ratings_friends2)) + '\n')
         """
         print "    Fitting done."
-        #print self.n_ratings_lower_limit
-        #print self.n_ratings_upper_limit
 
         return self  # Return the fitted self in case.
-
 
     def pred_one_rating(self, user_id, item_id):
         """
@@ -141,9 +136,9 @@ class Using_Friends():
 
         # Rows for non-zero ratings for the given item.
         rows = self.rows_nonzero[item_id]
-        #print 'a', len(rows)
-        # If there is no rating to use for prediction, no need to search thru friends.
-        if len(rows) < self.n_ratings_lower_limit:  
+        # If there is no rating to use for prediction,
+        # no need to search thru friends.
+        if len(rows) < self.n_ratings_lower_limit:
             if self.if_average:
                 return self.average_ratings_item[item_id]
             else:
@@ -152,8 +147,8 @@ class Using_Friends():
         for irow in rows:  # For all rows with non-zero ratings.
             if irow in self.my_friends[user_id]:
                 temp_ratings.append(self.ratings_mat[irow, item_id])
-        temp_ratings2 = self.pick_random(temp_ratings, self.n_ratings_upper_limit)
-        #print len(temp_ratings2)
+        temp_ratings2 = self.pick_random(temp_ratings,
+                                         self.n_ratings_upper_limit)
         if len(temp_ratings2) < self.n_ratings_lower_limit:
             if self.if_average:
                 return self.average_ratings_item[item_id]
@@ -161,7 +156,6 @@ class Using_Friends():
                 return 0
         else:
             return np.mean(temp_ratings)
-
 
     def pred_one_user(self, user_id):
         """
@@ -183,7 +177,6 @@ class Using_Friends():
             # There is no efficiency lost, by calling this function one by one.
         return prediction
 
-
     def pred_all(self):
         """
         Predict for all user-item pairs.
@@ -191,7 +184,6 @@ class Using_Friends():
             predicted: np.array (2d)
         """
         return None  # not implemeted here.
-
 
     def top_n_recs(self, user_id, num):
         """
@@ -209,7 +201,6 @@ class Using_Friends():
                 items_predicted[icol] = False
         return np.argsort(pred_output[items_predicted])[-num:][::-1]
 
-
     def pick_random(self, ratings_list, n_ratings_limit, seed=789):
         """
         Pick a certain number of friends from a list of friends randomly.
@@ -226,4 +217,5 @@ class Using_Friends():
             return ratings_list
 
         np.random.seed(seed)  # Set the seed as given
-        return np.random.choice(ratings_list, size=n_ratings_limit, replace=False)
+        return np.random.choice(ratings_list, size=n_ratings_limit,
+                                replace=False)
