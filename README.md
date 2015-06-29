@@ -5,29 +5,35 @@ With the big growth in online commerce in recent years,
 recommendation systems (recommenders) have become very popular.
 Recommenders try to match certain *items* to specific *users*, based on
 existing information, and usually show recommended items to users
-in their web interface.
+in their web interfaces.
 
-If there exist user attributes and item attributes, those information 
-can be arranged in a shared space (featurization) 
+If user attributes and item attributes exist, those information 
+can be arranged in a shared space,
 so that user-item *distances* can be used to find out how well they match
 (content-based methods).
-If there exist ratings (usually in the scale of 1 to 5) given by users for
-certain items, recommenders try to predict unknown ratings using past ratings.
+
+If ratings (usually, in values of 1 to 5) given by users for
+items exist, recommenders try to predict unknown ratings using past ratings
+to recommend items to users.
 An easiest method is to use average predictions for a given user-item pair
 (biases of users and/or items can be considered, in addition).
-But that might not be good enough, because we know that all users are not the
+But that might not be good enough, because we know that users are not the
 same; rather we users are quite diverse with many unique characteristics.
-Then what we can do is using the user attributes to group
-users, and then use members of the same group of the user
+Then one thing we can do is using the user attributes to group
+users, and then use members of the same group
 for predicting ratings (demographic filtering).
-This type of methods will give us better predictions compared to using averages,
-because we are now considering characteristics of diverse users.
-Or we can compare users (or items) by looking at 
+
+We can compare users (or items) by looking at 
 similarities between their past ratings to find out similar users (or
-items) for predictions (collaborative filtering).
-Each method has some drawbacks, which we will not go into detail here,
-and most recommendation systems combine some existing methods to have better
-results (hybrid models).
+items) for predictions.
+Or, we can find latent factors using matrix factorization techniques
+(collaborative filtering).
+
+This type of filtering methods will give us better predictions compared to using averages,
+because we are now considering characteristics of diverse users.
+Each method mentioned above has its own drawbacks, which we will not go into detail here,
+and most recommendation systems combine some existing methods to find better
+predictions (hybrid models).
 
 Another recent big trend is the growth and availability of huge social networks that
 have the information of how users are connected with each other.
@@ -39,10 +45,12 @@ with them, and sharing information with them.
 This is a well-known and obvious problem, and I believe
 many computer scientists and data scientists have been tackling this problem
 in academia and industry for sevaral years now[1-3]. 
+
 Then the next question is: how do we incorporate network information into
 recommenders?
 Here I implement
-and analyze the simplest approach of using past ratings of friends for predicting ratings.
+and analyze the simplest approach of using past ratings of friends for predicting ratings
+(we may call it *network filtering*).
 <!--- 
 {% include figure.html src="fig/net_rec2.png" caption="Fig.1. Schmatic diagram
     describing the model" %}
@@ -51,7 +59,7 @@ and analyze the simplest approach of using past ratings of friends for predictin
 The above figure describes the method. If a user, named Shaun, has two friends, Jef
 and Vik, who rated a business, named Cafe, we assume that Shaun's rating is
 more likely to be closer to their ratings than the average rating.
-To test the model, we will use the data from [Yelp Dataset
+To test this simple model, we will use the data from [Yelp Dataset
 Challenge](http://www.yelp.com/dataset_challenge).
 
 ## Data
@@ -85,12 +93,12 @@ If I briefly describe the preprocessing:
     we further drop users by only keeping the biggest component of the
     network for each city. The number of users now has become 147,114.
     For example, the network (the biggest component) of Montreal with 3,071
-    users and 9,121 edges look like below (using sfdp layout). 
+    users and 9,121 edges looks like below (using sfdp layout). 
 ![Fig.2](fig/network3b_sfdp.png "Fig.2. Network for the city of Montreal")
 
 Now we will briefly examine the city-by-city data (for more detailed analysis, 
 look at
-[EDA](https://github.com/suhanree/network-recommender/blob/master/code/EDA.ipynb),
+[EDA.ipynb](https://github.com/suhanree/network-recommender/blob/master/code/EDA.ipynb),
 done in ipython notebook format).
 If we compare cities by counts, the figure below shows ratios for cities for 
 numbers of users, businesses, and ratings.
@@ -111,6 +119,7 @@ But if we look at ratings distributions city by city, we can see a clear differe
 ![Fig.4](fig/ratings_dist.png "Fig.4. Ratings distributions")
 In Phoenix and Las Vegas, 5 is given the most, but in Charlotte and Montreal, 4
 is the most given rating. Big cities are more generous? Maybe.
+
 Now we turn our attention to the main focus of this project: a recommender with 
 a social network.
 
