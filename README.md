@@ -48,7 +48,7 @@ and analyze the simplest approach of using past ratings of friends for predictin
     describing the model" %}
 --->
 ![Fig.1](fig/net_rec2.png "Fig.1. Schematic diagram describing the model")
-The Fig.1 describes the method. If a user, named Shaun, has two friends, Jef
+The above figure describes the method. If a user, named Shaun, has two friends, Jef
 and Vik, who rated a business, named Cafe, we assume that Shaun's rating is
 more likely to be closer to their ratings than the average rating.
 To test the model, we will use the data from [Yelp Dataset
@@ -86,7 +86,33 @@ If I briefly describe the preprocessing:
     network for each city. The number of users now has become 147,114.
     For example, the network (the biggest component) of Montreal with 3,071
     users and 9,121 edges look like below (using sfdp layout). 
-![Fig.2](fig/network3b_sfdp.png)
+![Fig.2](fig/network3b_sfdp.png "Fig.2. Network for the city of Montreal")
+
+Now we will briefly examine the city-by-city data (for more detailed analysis, 
+look at
+[EDA](https://github.com/suhanree/network-recommender/blob/master/code/EDA.ipynb),
+done in ipython notebook format).
+If we compare cities by counts, the figure below shows ratios for cities for 
+numbers of users, businesses, and ratings.
+There are two big cities, Phoenix and Las Vegas, and five medium cities, and
+three small cities.
+![Fig.3](fig/ratios_by_city.png "Fig.3. Ratios of counts by city")
+One thing that catches our eyes is that the number of users are the highest for
+Las Vegas, even though the number of businesses is not the highest.
+It also appears that the average degree for Las Vegas (around 12) is about twice as much
+as average degrees for other cities (around 6).
+Having more tourists alone cannot explain this phenomenon, and I can only
+conclude that there are just more active users in Las Vegas, based on this
+data. There may exist other outside factors I am not aware of.
+
+Another interesting thing is that distributions of ratings are different for
+some cities. Overall ratings are skewed toward 5 with the mean at 3.75.
+But if we look at ratings distributions city by city, we can see a clear difference.
+![Fig.4](fig/ratings_dist.png "Fig.4. Ratings distributions")
+In Phoenix and Las Vegas, 5 is given the most, but in Charlotte and Montreal, 4
+is the most given rating. Big cities are more generous? Maybe.
+Now we turn our attention to the main focus of this project: a recommender with 
+a social network.
 
 ## Model
 
@@ -126,3 +152,6 @@ If I briefly describe the preprocessing:
     4772-8 (2010).
 
 ## Appendix: technical details.
+Here I present some technical details for this project. First a diagram
+representing data flow is given below.
+![Fig.7](fig/data_flow.pdf "Fig.7. Data flow diagram")
