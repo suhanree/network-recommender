@@ -1,10 +1,11 @@
-# Exploring recommenders with networks
+# Exploring Recommenders with Networks
 
 ## Introduction
 With the big growth in online commerce in recent years, 
 recommendation systems (recommenders) have become very popular.
 Recommenders try to match certain *items* to specific *users*, based on
-existing information.
+existing information, and usually show recommended items to users
+in their web interface.
 
 If there exist user attributes and item attributes, those information 
 can be arranged in a shared space (featurization) 
@@ -29,7 +30,7 @@ and most recommendation systems combine some existing methods to have better
 results (hybrid models).
 
 Another recent big trend is the growth and availability of huge social networks that
-has the information of how users are connected with each other.
+have the information of how users are connected with each other.
 Then one can ask a question: if we use social networks in recommenders in
 addition to methods described above, will the performance of recommenders be enhanced?
 We already know the answer. The answer is yes; because we tend to become
@@ -42,7 +43,9 @@ Then the next question is: how do we incorporate network information into
 recommenders?
 Here I implement
 and analyze the simplest approach of using past ratings of friends for predicting ratings.
-![Fig.1](fig/net_rec2.png)
+{% include figure.html src="fig/net_rec2.png" caption="Fig.1. Schmatic diagram
+    describing the model" %}
+<!--- ![Fig.1](fig/net_rec2.png) --->
 The Fig.1 describes the method. If a user, named Shaun, has two friends, Jef
 and Vik, who rated a business, named Cafe, we assume that Shaun's rating is
 more likely to be closer to their ratings than the average rating.
@@ -51,7 +54,7 @@ Challenge](http://www.yelp.com/dataset_challenge).
 
 ## Data
 
-The data consist of 5 json files, and each file has information on
+The data consist of five json files, and each file has information on
 users, businesses, reviews (with ratings), tips, and check-ins.
 The data is composed by Yelp to represent 10 cities: 
 Phoenix, Las Vegas, Charlotte, Montreal, Edinburgh, Pittsburgh,
@@ -74,13 +77,13 @@ If I briefly describe the preprocessing:
     friends to determine, a city was assigned randomly.
 4. Since we are only concerned with users who are in social network (with
    friends), we dropped users without any friend and their ratings from the
-    dataset. The number of users is reduced from 300,000 to 174,094 here.
+    dataset. The number of users is reduced from 366,715 to 174,094 here.
 5. If we ignore network edges between users in different cities (about 22% of
    edges are dropped here), we now have 10 separate subsets of data. Here
     we further drop users by only keeping the biggest component of the
     network for each city. The number of users now has become 147,114.
     For example, the network (the biggest component) of Montreal with 3,071
-    users and 9,000 edges look like below (using sfdp layout). 
+    users and 9,121 edges look like below (using sfdp layout). 
 ![Fig.2](fig/network3b_sfdp.png)
 
 ## Model
