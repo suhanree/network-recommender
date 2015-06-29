@@ -1,6 +1,6 @@
-# To run the UF recommender.
+# To run the NF recommender.
 
-# Filename: run_uf.py
+# Filename: run_nf.py
 # by Suhan Ree
 # last edited on 06-27-2015
 

@@ -101,14 +101,23 @@ look at
 [EDA.ipynb](https://github.com/suhanree/network-recommender/blob/master/code/EDA.ipynb),
 done in ipython notebook format).
 If we compare cities by counts, the figure below shows ratios for cities for 
-numbers of users, businesses, and ratings.
+numbers of users, businesses, and ratings (before we drop users based on
+the structure of social network).
 There are two big cities, Phoenix and Las Vegas, and five medium cities, and
 three small cities.
 ![Fig.3](fig/ratios_by_city.png "Fig.3. Ratios of counts by city")
 One thing that catches our eyes is that the number of users are the highest for
 Las Vegas, even though the number of businesses is not the highest.
-It also appears that the average degree for Las Vegas (around 12) is about twice as much
-as average degrees for other cities (around 6).
+The numbers of users per business for each city are as below.
+
+| | Phoenix | Las Vegas | Charlotte | Montreal | Edinburgh | Pittsburgh |
+Madison | Karlsruhe | Urbana-Champaign | Waterloo|
+|---|---|---|---|---|---|---|---|---|---|---|
+|users per business|5.09|11.03|4.79|3.54|1.07|5.85|5.07|0.81|6.25|3.18|
+|average degree|8.6|17.2|6.0|5.4|9.4|5.2|4.6|2.4|2.7|2.3|
+
+It also appears that the average degree for Las Vegas (around 17) is more
+than twice as much as average degrees for other cities.
 Having more tourists alone cannot explain this phenomenon, and I can only
 conclude that there are just more active users in Las Vegas, based on this
 data. There may exist other outside factors I am not aware of.
@@ -208,3 +217,39 @@ files, and perform K-fold cross-validation.
 
 To run the models (CF and NF), two codes are used: `run_cf.py` and `run_nf.py`,
 respectively. Model parameters can be given to the model using a text file.
+
+For example, let's run the CF model. 
+If you have a file, called `input_params_cf`, with 4
+lines like this:
+```
+0 1 2 3 4 5 6 7 8 9
+2
+0.011
+0.12
+```
+and if you run the code as below.
+```sh
+$ run_cf.py input_params_cf 0 1
+```
+it will run the CF model for all cities (0~9) with `n_features=2`,
+   `learning_rate=0.011`, and `regularization_param=0.12`. 
+In the command line, 0 and 1 means it will not include the user bias (0) and 
+that it will include the item biases (1).
+
+To run the NF model, we also need a file, called `input_params_nf`,
+with 3 lines like this:
+```
+0 1 2 3 4 5 6 7 8 9
+2
+20
+```
+and run the code as below.
+```sh
+$ run_nf.py input_params_nf 1
+```
+Then, it will run the NF model for all cities (0~9) with the lower and upper
+limits of the number of ratings by friends as 2 and 20.
+In the command line, 1 means it will use the business average rating
+if there is not enough ratings by friends. If this value is 0, it will
+only predict only when ratings by friends are available, 
+and find RMSE based on only those cases.
