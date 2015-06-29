@@ -75,7 +75,7 @@ had to be performed (see Appendix for technical details).
 If I briefly describe the preprocessing:
 
 1. We only need users, bussinesses, and ratings (from the file of reviews).
-    Also we'd like to do some city-by-city analysis, so we will separate data
+    We'd like to do some city-by-city analysis, so we will separate data
     into 10 subsets for each city.
 2. First, each businsess was assigned a city by their location information. Due to the
    nature of the dataset, every business was classified cleanly.
@@ -89,7 +89,8 @@ If I briefly describe the preprocessing:
    friends), we dropped users without any friend and their ratings from the
     dataset. The number of users is reduced from 366,715 to 174,094 here.
 5. If we ignore network edges between users in different cities (about 22% of
-   edges are dropped here), we now have 10 separate subsets of data. Here
+   edges are dropped here), we now have 10 separate subsets of data.
+    Finally, here
     we further drop users by only keeping the biggest component of the
     network for each city. The number of users now has become 147,114.
     For example, the network (the biggest component) of Montreal with 3,071
@@ -100,7 +101,7 @@ Now we will briefly examine the city-by-city data (for more detailed analysis,
 look at
 [EDA.ipynb](https://github.com/suhanree/network-recommender/blob/master/code/EDA.ipynb),
 done in ipython notebook format).
-If we compare cities by counts, the figure below shows ratios for cities for 
+If we compare cities by counts, the figure below shows ratios for
 numbers of users, businesses, and ratings (before we drop users based on
 the structure of social network).
 There are two big cities, Phoenix and Las Vegas, and five medium cities, and
@@ -108,10 +109,9 @@ three small cities.
 ![Fig.3](fig/ratios_by_city.png "Fig.3. Ratios of counts by city")
 One thing that catches our eyes is that the number of users are the highest for
 Las Vegas, even though the number of businesses is not the highest.
-The numbers of users per business for each city are as below.
+The numbers of users per business for each city and average degrees are as below.
 
-| | Phoenix | Las Vegas | Charlotte | Montreal | Edinburgh | Pittsburgh |
-Madison | Karlsruhe | Urbana-Champaign | Waterloo|
+||Phoenix|Las Vegas|Charlotte|Montreal|Edinburgh|Pittsburgh|Madison|Karlsruhe|Urbana-Champaign|Waterloo|
 |---|---|---|---|---|---|---|---|---|---|---|
 |users per business|5.09|11.03|4.79|3.54|1.07|5.85|5.07|0.81|6.25|3.18|
 |average degree|8.6|17.2|6.0|5.4|9.4|5.2|4.6|2.4|2.7|2.3|
@@ -199,18 +199,18 @@ while ratings for other big cities were different).
 Here I present some technical details for this project. First, a diagram
 representing data flow is given below.
 ![Fig.7](fig/data_flow.png "Fig.7. Data flow diagram")
-The original data are given by three json files at the top (not given in this
-repo due to the sizes), and three python codes (`extend_network.py`, `make_dataframes.py`, and 
-`find_users_by_city.py`) process these files to produce
+The original data are given by three json files at the top (not stored in this
+repo due to the sizes), and three python codes (`extend_network.py`,
+`make_dataframes.py`, and `find_users_by_city.py`) process these files to produce
 separate network files and ratings information, one for each city.
-During the process, intermediate results in pandas dataframes and ID mapping
+During the process, intermediate results of pandas dataframes and ID mapping
 information are stored in pickled files for future usages.
 
-After preprocessing, models can be run. I have two basic models. One for the
+After preprocessing, models can be run. I have implemented two methods.
+One for the
 collaborative filtering (CF; `factorization.py`), implemented using SVD with
 stochastic gradient descent.
-The other model is the friend-based network model (we may call this method,
-**network filtering**, or **NF**; `using_friends.py`),
+The other for the friend-based network model (NF; `using_friends.py`),
 implemented using python for this project.
 In addition, Validator class (`validator.py`) was implemented to read input
 files, and perform K-fold cross-validation.
@@ -218,9 +218,9 @@ files, and perform K-fold cross-validation.
 To run the models (CF and NF), two codes are used: `run_cf.py` and `run_nf.py`,
 respectively. Model parameters can be given to the model using a text file.
 
-For example, let's run the CF model. 
-If you have a file, called `input_params_cf`, with 4
-lines like this:
+For example, for the CF model,
+if you have a file, called `input_params_cf`, with 4
+lines like this,
 ```
 0 1 2 3 4 5 6 7 8 9
 2
@@ -233,11 +233,11 @@ $ run_cf.py input_params_cf 0 1
 ```
 it will run the CF model for all cities (0~9) with `n_features=2`,
    `learning_rate=0.011`, and `regularization_param=0.12`. 
-In the command line, 0 and 1 means it will not include the user bias (0) and 
-that it will include the item biases (1).
+In the command line, 0 and 1 means it will not include user bias (0) and 
+that it will consider item biases (1).
 
 To run the NF model, we also need a file, called `input_params_nf`,
-with 3 lines like this:
+with 3 lines like this,
 ```
 0 1 2 3 4 5 6 7 8 9
 2
@@ -251,5 +251,5 @@ Then, it will run the NF model for all cities (0~9) with the lower and upper
 limits of the number of ratings by friends as 2 and 20.
 In the command line, 1 means it will use the business average rating
 if there is not enough ratings by friends. If this value is 0, it will
-only predict only when ratings by friends are available, 
+predict only when ratings by friends are available, 
 and find RMSE based on only those cases.
