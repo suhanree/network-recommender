@@ -154,4 +154,4 @@ a social network.
 ## Appendix: technical details.
 Here I present some technical details for this project. First a diagram
 representing data flow is given below.
-![Fig.7](fig/data_flow.pdf "Fig.7. Data flow diagram")
+![Fig.7](fig/data_flow.png "Fig.7. Data flow diagram")
