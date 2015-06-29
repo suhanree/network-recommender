@@ -118,6 +118,31 @@ a social network.
 
 ## Results
 
+![Fig.5](fig/limit.png "Fig.5. How RMSE changes with the limit for friend
+        ratings")
+Train and test sets
+are chosen randomly out of all given ratings, and the train set is
+divided into K folds randomly again.
+Then, each fold is used as a validation set to find an RMSE (Root Mean Squared
+Error), and the averaged RMSE is obtained for the given model.
+
+![Fig.6](fig/rmse.png "Fig.6. RMSE's for different models")
+For CF, the grid search was performed to find the right parameter set.
+The parameters are n_features (number of latent features), learning_rate
+(learning rate for the stochastic gradient descent), and
+regularization_parameter (regularization parameter).
+A parameter that seems to give the best RMSE was (n_features=2,
+learning_rate=0.009, regularization_parameter=0.07).
+There are features that can add user- or item-biases.
+Item-biases made RMSE's lower,  while user-biases didn't work well.
+So only item-biases were considered computing RMSE's.
+Somehow it didn't work as well as I expected expecially for
+Montreal and Edinburgh. 
+The baseline RMSE for each city were obtained by computing RMSE when we predict
+ratings based on the rating average for each item.
+Both cities showed relatively low baseline RMSE's, which may be related to
+the ratings distribution we observed earlier (ratings were centered aroung 4,
+while ratings for other big cities were different).
 
 ## References
 
@@ -140,7 +165,8 @@ a social network.
    [figshare](http://figshare.com/articles/graph_tool/1164194). DOI:
    10.6084/m9.figshare.1164194 (2014).
 
-5. Mining of Massive Datasets, by Jure Leskovec, Anand Rajaraman, and Jeffrey D. Ullman, [http://infolab.stanford.edu/~ullman/mmds/book.pdf](http://infolab.stanford.edu/~ullman/mmds/book.pdf) (2014). 
+5. Mining of Massive Datasets, by Jure Leskovec, Anand Rajaraman, and Jeffrey D. Ullman,
+    [http://infolab.stanford.edu/~ullman/mmds/book.pdf](http://infolab.stanford.edu/~ullman/mmds/book.pdf) (2014). 
 
 6. Systems and methods to facilitate searches based on social graphs and affinity groups,
   by David Yoo, US Patent App. 14/516,875, 
@@ -152,6 +178,24 @@ a social network.
     4772-8 (2010).
 
 ## Appendix: technical details.
-Here I present some technical details for this project. First a diagram
+Here I present some technical details for this project. First, a diagram
 representing data flow is given below.
 ![Fig.7](fig/data_flow.png "Fig.7. Data flow diagram")
+The original data are given by three json files at the top (not given in this
+repo due to the sizes), and three python codes (`extend_network.py`, `make_dataframes.py`, and 
+`find_users_by_city.py`) process these files to produce
+separate network files and ratings information, one for each city.
+During the process, intermediate results in pandas dataframes and ID mapping
+information are stored in pickled files for future usages.
+
+After preprocessing, models can be run. I have two basic models. One for the
+collaborative filtering (CF; `factorization.py`), implemented using SVD with
+stochastic gradient descent.
+The other model is the friend-based network model (we may call this method,
+**network filtering**, or **NF**; `using_friends.py`),
+implemented using python for this project.
+In addition, Validator class (`validator.py`) was implemented to read input
+files, and perform K-fold cross-validation.
+
+To run the models (CF and NF), two codes are used: `run_cf.py` and `run_nf.py`,
+respectively. Model parameters can be given to the model using a text file.
