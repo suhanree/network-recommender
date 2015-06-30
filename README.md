@@ -42,15 +42,13 @@ addition to methods described above, will the performance of recommenders be enh
 We already know the answer. The answer is yes; because we tend to become
 friends with similar people, or we become similar with friedns by interacting
 with them, and sharing information with them.
-This is a well-known and obvious problem, and I believe
-many computer scientists and data scientists have been tackling this problem
-in academia and industry for sevaral years now[1-3]. 
 
 Then the next question is: how do we incorporate network information into
 recommenders?
 Here I implement
-and analyze the simplest approach of using past ratings of friends for predicting ratings
-(we may call it *network filtering*).
+and analyze the simplest approach of using past ratings of friends for
+predicting ratings
+(we may call it *network filtering*, or NF).
 <!--- 
 {% include figure.html src="fig/net_rec2.png" caption="Fig.1. Schmatic diagram
     describing the model" %}
@@ -127,40 +125,112 @@ some cities. Overall ratings are skewed toward 5 with the mean at 3.75.
 But if we look at ratings distributions city by city, we can see a clear difference.
 ![Fig.4](fig/ratings_dist.png "Fig.4. Ratings distributions")
 In Phoenix and Las Vegas, 5 is given the most, but in Charlotte and Montreal, 4
-is the most given rating. Big cities are more generous? Maybe.
+is the most given rating. People in big cities are more generous? Maybe.
 
 Now we turn our attention to the main focus of this project: a recommender with 
 a social network.
 
 ## Model
 
+### How we compare models
+Models will be compared using the average RMSE (Root Mean Squared Error)
+from the K-fold cross-validation.
+First, train and test sets
+are chosen randomly out of all given ratings, and next, the train set is
+divided into K folds randomly again.
+Then, each fold is used as a validation set to find an RMSE,
+and the averaged RMSE is obtained for the given model.
+
+### Model implemented
+The network model implemented here is the simplest one.
+We predict ratings based on past ratings done by friends.
+It makes sense because of the homophily. Also friends tend to spend time together,
+so they are more likely to visit/use the same businesses.
+If that is true, predictions based on ratings by friends will be more accurate
+on average.
+The figure below seems to show that our assumption might be true.
+![Fig.5](fig/friends.png "Fig.5. How predictions given by the number of ratings by friends change RMSE")
+For the city of Montreal, if we use the business average as the prediction, the
+RMSE is 1.065, and this value is a good baseline to compare to.
+Now we look at predictions with the certain number of friend ratings, and find
+RMSE's for these subsets of data as we increase this number.
+And do the same with only friends of friends (excluding friends).
+As expected, as this number increases, RMSE's tend to go down, and
+friends of friends tend to give less accurate predictions.
+
+If there is only one friend rating, the accuracy is not as
+good; therefore our model has the lower limit (also the upper limit) for
+the number of friend ratings to consider.
+If the number of friend ratings is less than the lower limit, there will
+be no prediction; while if it exceeds the upper limit, the model will
+choose friend ratings randomly.
+The figure below shows how RMSE for the subset changes as this lower limit
+increases for Montreal. 
+Also the coverage, the term used in [2] to express how much
+ratings were predicted, decreases, too.
+![Fig.6](fig/limit.png "Fig.6. How RMSE changes with the limit for friend
+        ratings")
+The coverage is around 0.2 at the lower limit at 2, but it decreases
+significantly when the limit is at 10.
+Other cities show almost the same behavior.
+Due to this property, we set the lower limit at 2, and the model has to be
+combined with other models to get predictions for all possible cases.
+
 ## Results
 
-![Fig.5](fig/limit.png "Fig.5. How RMSE changes with the limit for friend
-        ratings")
-Train and test sets
-are chosen randomly out of all given ratings, and the train set is
-divided into K folds randomly again.
-Then, each fold is used as a validation set to find an RMSE (Root Mean Squared
-Error), and the averaged RMSE is obtained for the given model.
+Now we compare the network model with other models.
+We consider four models: (1) model that uses business average ratings (baseline
+model); (2) model using collaborative filtering with matrix factorization (CF);
+(3) model with friend ratings, where the business average ratings are
+used when there is not enough friend ratings (NF + average); (4) model with 
+friend ratings, where only subsets satisfying our condition are considered.
+The figure below shows RMSE's for 7 cities (other 3 cities are too small
+to show any meaningful results).
+![Fig.7](fig/rmse.png "Fig.7. RMSE's for different models")
 
-![Fig.6](fig/rmse.png "Fig.6. RMSE's for different models")
+The RMSE for each city were obtained by predicting
+the rating average for each business.
+There are some discrepancies between cities.
+It is very low for Edinburgh, but it is too small to have any significant meaning.
+Charlotte and Montreal showed relatively low baseline RMSE's, which may be related to
+the ratings distribution we observed earlier (ratings were centered aroung 4,
+while ratings for other big cities were different).
+
 For CF, the grid search was performed to find the right parameter set.
 The parameters are n_features (number of latent features), learning_rate
 (learning rate for the stochastic gradient descent), and
 regularization_parameter (regularization parameter).
 A parameter that seems to give the best RMSE was (n_features=2,
-learning_rate=0.009, regularization_parameter=0.07).
-There are features that can add user- or item-biases.
-Item-biases made RMSE's lower,  while user-biases didn't work well.
-So only item-biases were considered computing RMSE's.
-Somehow it didn't work as well as I expected expecially for
-Montreal and Edinburgh. 
-The baseline RMSE for each city were obtained by computing RMSE when we predict
-ratings based on the rating average for each item.
-Both cities showed relatively low baseline RMSE's, which may be related to
-the ratings distribution we observed earlier (ratings were centered aroung 4,
-while ratings for other big cities were different).
+learning_rate=0.011, regularization_parameter=0.12).
+This CF model has features that can add user- or item-biases.
+Item-biases made RMSE's lower, while user-biases didn't.
+So only item-biases were considered when computing RMSE's.
+Somehow CF didn't give us significantly better RMSE's compared to the baseline
+model. For Montreal, CF was a little worse than the baseline model.
+
+For the network model (NF), subset RMSE's are significantly lower for all cities 
+when we only consider predictions done by this method ignoring all other cases.
+But if we simply combine two models, NF and average, we can compare RMSE's with
+other models. RMSE's are not significantly lower as subset RMSE's are but 
+RMSE's are lower than those from CF in all cities shown.
+
+## Discussions
+
+* We observed that social networks can be useful in recommenders.
+
+* Hybrid models are needed, because social networks cannot be applied to every
+  case as shown above.
+
+* This is a well-known problem, and I believe
+many computer scientists and data scientists have been tackling this problem
+in academia and industry for sevaral years now [1]. 
+I even found a work that deal with the simialr model using Yelp data [2].
+
+* Other approaches incorporating networks are possible. One model I planned to
+  do, but couldn't due to the time constraint, 
+  was using communities of the given network.
+
+* There are many possible applications for this model.
 
 ## References
 
@@ -198,7 +268,7 @@ while ratings for other big cities were different).
 ## Appendix: technical details.
 Here I present some technical details for this project. First, a diagram
 representing data flow is given below.
-![Fig.7](fig/data_flow.png "Fig.7. Data flow diagram")
+![Fig.8](fig/data_flow.png "Fig.8. Data flow diagram")
 The original data are given by three json files at the top (not stored in this
 repo due to the sizes), and three python codes (`extend_network.py`,
 `make_dataframes.py`, and `find_users_by_city.py`) process these files to produce
