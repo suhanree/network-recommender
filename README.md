@@ -21,7 +21,7 @@ But that might not be good enough, because we know that users are not the
 same; rather we users are quite diverse with many unique characteristics.
 Then one thing we can do is using the user attributes for grouping
 users, and then use members of the same group
-for predictings (demographic filtering).
+for predictions (demographic filtering).
 
 We can compare users (or items) by looking at 
 similarities between their past ratings to find out similar users (or
