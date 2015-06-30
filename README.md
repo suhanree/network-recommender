@@ -280,6 +280,9 @@ in academia and industry for sevaral years now [3-5,7,8].
    (http://sctr7.com/2014/06/27/the-cutting-edge-network-analytics-for-financial-fraud-detection-and-mitigation/)
    (2014).
 
+1. I thank mentors and instructors who helped finish this project: Tammy,
+   Robert, Karthik, Dominique, and Tom.
+
 ## Appendix: technical details.
 Here I present some technical details for this project. First, a diagram
 representing data flow is given below.
