@@ -12,26 +12,28 @@ can be arranged in a shared space,
 so that user-item *distances* can be used to find out how well they match
 (content-based methods).
 
-If ratings (usually, in values of 1 to 5) given by users for
-items exist, recommenders try to predict unknown ratings using past ratings
-to recommend items to users.
-An easiest method is to use average predictions for a given user-item pair
+If ratings, given by users for
+items, exist (usually, in values of 1 to 5),
+recommenders try to predict unknown ratings using past ratings.
+One simple method is to use average ratings for predictions
 (biases of users and/or items can be considered, in addition).
 But that might not be good enough, because we know that users are not the
 same; rather we users are quite diverse with many unique characteristics.
-Then one thing we can do is using the user attributes to group
+Then one thing we can do is using the user attributes for grouping
 users, and then use members of the same group
-for predicting ratings (demographic filtering).
+for predictions (demographic filtering).
 
 We can compare users (or items) by looking at 
 similarities between their past ratings to find out similar users (or
 items) for predictions.
 Or, we can find latent factors using matrix factorization techniques
-(collaborative filtering).
+(collaborative filtering) [1,2].
 
-This type of filtering methods will give us better predictions compared to using averages,
-because we are now considering characteristics of diverse users.
-Each method mentioned above has its own drawbacks, which we will not go into detail here,
+This type of filtering methods will give us better predictions compared to 
+models using averages,
+because we are now considering diverse characteristics of users.
+Each method mentioned above has its own drawbacks,
+which we will not go into detail here,
 and most recommendation systems combine some existing methods to find better
 predictions (hybrid models).
 
@@ -41,21 +43,21 @@ Then one can ask a question: if we use social networks in recommenders in
 addition to methods described above, will the performance of recommenders be enhanced?
 We already know the answer. The answer is yes; because we tend to become
 friends with similar people, or we become similar with friedns by interacting
-with them, and sharing information with them.
+with them, and sharing information with them [3-5].
 
 Then the next question is: how do we incorporate network information into
 recommenders?
 Here I implement
 and analyze the simplest approach of using past ratings of friends for
-predicting ratings
-(we may call it *network filtering*, or NF).
+predictions.
+(we may call it *network filtering*, or NF, for convenience).
 <!--- 
 {% include figure.html src="fig/net_rec2.png" caption="Fig.1. Schmatic diagram
     describing the model" %}
 --->
-![Fig.1](fig/net_rec2.png "Fig.1. Schematic diagram describing the model")
-The above figure describes the method. If a user, named Shaun, has two friends, Jef
-and Vik, who rated a business, named Cafe, we assume that Shaun's rating is
+![Fig.1](fig/net_rec1.png "Fig.1. Schematic diagram describing the model")
+The above figure describes the method. If a user, named Suhan, has two friends, Jef
+and Vik, who rated a business, named Ovo Cafe, we assume that Suhan's rating is
 more likely to be closer to their ratings than the average rating.
 To test this simple model, we will use the data from [Yelp Dataset
 Challenge](http://www.yelp.com/dataset_challenge).
@@ -74,11 +76,11 @@ If I briefly describe the preprocessing:
 
 1. We only need users, bussinesses, and ratings (from the file of reviews).
     We'd like to do some city-by-city analysis, so we will separate data
-    into 10 subsets for each city.
+    into 10 subsets, one for each city.
 2. First, each businsess was assigned a city by their location information. Due to the
    nature of the dataset, every business was classified cleanly.
-3. Second, by going through every rating with user and business information, we
-   were able to assign ratings and users to each city. One problem arises when
+3. Second, by going through every rating with (user, business) information, we
+   were able to assign users to each city. One problem arises when
    there are users who left ratings on multiple cities (about 5% of users).
    In those cases, we looked at friends of these users, and found cities where
    the majority of friends reside. If there is no majority or there is not enough
@@ -87,12 +89,13 @@ If I briefly describe the preprocessing:
    friends), we dropped users without any friend and their ratings from the
     dataset. The number of users is reduced from 366,715 to 174,094 here.
 5. If we ignore network edges between users in different cities (about 22% of
-   edges are dropped here), we now have 10 separate subsets of data.
+   edges are dropped here), we now have 10 separate subsets of network data.
     Finally, here
     we further drop users by only keeping the biggest component of the
     network for each city. The number of users now has become 147,114.
     For example, the network (the biggest component) of Montreal with 3,071
-    users and 9,121 edges looks like below (using sfdp layout). 
+    users and 9,121 edges looks like below (using sfdp layout in graph_tool
+    library [6]). 
 ![Fig.2](fig/network3b_sfdp.png "Fig.2. Network for the city of Montreal")
 
 Now we will briefly examine the city-by-city data (for more detailed analysis, 
@@ -134,7 +137,7 @@ a social network.
 
 ### How we compare models
 Models will be compared using the average RMSE (Root Mean Squared Error)
-from the K-fold cross-validation.
+from the K-fold cross-validation (K=10).
 First, train and test sets
 are chosen randomly out of all given ratings, and next, the train set is
 divided into K folds randomly again.
@@ -142,54 +145,59 @@ Then, each fold is used as a validation set to find an RMSE,
 and the averaged RMSE is obtained for the given model.
 
 ### Model implemented
-The network model implemented here is the simplest one.
-We predict ratings based on past ratings done by friends.
+The network model implemented here is the simplest one:
+predicting ratings based on past ratings done by friends.
+(A similar model based on the same idea has been already studied thoroughly
+ in Ref.3.)
 It makes sense because of the homophily. Also friends tend to spend time together,
-so they are more likely to visit/use the same businesses.
+so they are more likely to visit/use the same businesses and to get influenced 
+with each other.
 If that is true, predictions based on ratings by friends will be more accurate
 on average.
 The figure below seems to show that our assumption might be true.
 ![Fig.5](fig/friends.png "Fig.5. How predictions given by the number of ratings by friends change RMSE")
 For the city of Montreal, if we use the business average as the prediction, the
 RMSE is 1.065, and this value is a good baseline to compare to.
-Now we look at predictions with the certain number of friend ratings, and find
+Now we look at predictions with the certain numbers of friend ratings, and find
 RMSE's for these subsets of data as we increase this number.
 And do the same with only friends of friends (excluding friends).
 As expected, as this number increases, RMSE's tend to go down, and
 friends of friends tend to give less accurate predictions.
 
-If there is only one friend rating, the accuracy is not as
-good; therefore our model has the lower limit (also the upper limit) for
+Because the accuracy is not as good
+if there is only one friend rating, 
+our model has the lower limit (also the upper limit, which is not as important) for
 the number of friend ratings to consider.
 If the number of friend ratings is less than the lower limit, there will
 be no prediction; while if it exceeds the upper limit, the model will
-choose friend ratings randomly.
-The figure below shows how RMSE for the subset changes as this lower limit
-increases for Montreal. 
-Also the coverage, the term used in [2] to express how much
-ratings were predicted, decreases, too.
+choose friend ratings randomly for predictions.
+The figure below shows how RMSE changes as this lower limit
+increases for Montreal data. 
+Also the *coverage*, the term used in Ref.3 to express the ratio of
+ratings that were predicted, decreases, too.
 ![Fig.6](fig/limit.png "Fig.6. How RMSE changes with the limit for friend
         ratings")
 The coverage is around 0.2 at the lower limit at 2, but it decreases
-significantly when the limit is at 10.
-Other cities show almost the same behavior.
+significantly as the limit increases.
+Other cities show almost the same behavior (not shown here).
 Due to this property, we set the lower limit at 2, and the model has to be
 combined with other models to get predictions for all possible cases.
 
 ## Results
 
-Now we compare the network model with other models.
+Now we compare our network model (NF) with other models.
 We consider four models: (1) model that uses business average ratings (baseline
-model); (2) model using collaborative filtering with matrix factorization (CF);
+model); (2) model using collaborative filtering with matrix factorization,
+also using business biases (CF);
 (3) model with friend ratings, where the business average ratings are
-used when there is not enough friend ratings (NF + average); (4) model with 
+used when the method is not applicable (NF + average); (4) model with 
 friend ratings, where only subsets satisfying our condition are considered.
 The figure below shows RMSE's for 7 cities (other 3 cities are too small
 to show any meaningful results).
 ![Fig.7](fig/rmse.png "Fig.7. RMSE's for different models")
 
-The RMSE for each city were obtained by predicting
-the rating average for each business.
+The baseline RMSE for each city were obtained by predicting
+the average rating for each business.
 There are some discrepancies between cities.
 It is very low for Edinburgh, but it is too small to have any significant meaning.
 Charlotte and Montreal showed relatively low baseline RMSE's, which may be related to
@@ -208,23 +216,27 @@ So only item-biases were considered when computing RMSE's.
 Somehow CF didn't give us significantly better RMSE's compared to the baseline
 model. For Montreal, CF was a little worse than the baseline model.
 
-For the network model (NF), subset RMSE's are significantly lower for all cities 
-when we only consider predictions done by this method ignoring all other cases.
-But if we simply combine two models, NF and average, we can compare RMSE's with
-other models. RMSE's are not significantly lower as subset RMSE's are but 
+For the network model (NF), RMSE's for subsets are significantly lower for all cities 
+when we only consider predictions done by this method ignoring cases without
+prediction (they are not comparable because RMSE's are not from the same set of
+data).
+But if we combine two models, NF and average, we can compare RMSE's with
+other models. RMSE's are not significantly lower as subset RMSE's are, but 
 RMSE's are lower than those from CF in all cities shown.
+
 
 ## Discussions
 
-* We observed that social networks can be useful in recommenders.
+* The question I asked can be answered; now we observed that 
+networks can help improve recommenders.
 
-* Hybrid models are needed, because social networks cannot be applied to every
-  case as shown above.
+* In most cases, hybrid models are needed,
+  because social networks cannot be applied to every
+  case as shown above. 
 
 * This is a well-known problem, and I believe
 many computer scientists and data scientists have been tackling this problem
-in academia and industry for sevaral years now [1]. 
-I even found a work that deal with the simialr model using Yelp data [2].
+in academia and industry for sevaral years now [3-5,7,8]. 
 
 * Other approaches incorporating networks are possible. One model I planned to
   do, but couldn't due to the time constraint, 
@@ -234,36 +246,42 @@ I even found a work that deal with the simialr model using Yelp data [2].
 
 ## References
 
+1. Mining of Massive Datasets, by Jure Leskovec, Anand Rajaraman, and Jeffrey D. Ullman,
+    [http://infolab.stanford.edu/~ullman/mmds/book.pdf](http://infolab.stanford.edu/~ullman/mmds/book.pdf) (2014). 
+
+1. Recommender Systems: Types of Filtering Techniques, by I. Ryngksai and L.
+   Chameikho, International Journal of Engineering Research & Technology, Vol.
+   3, Issue 11 (2014).
+
 1. A social network-based recommender system, by Wesley W. Chu and Jianming He,
    Doctoral Dissertation, published by University of California at Los Angeles (2010).
 
-2.   [fraud detections](http://sctr7.com/2014/06/27/the-cutti
-           ng-edge-network-analytics-for-financial-fraud-detection-and-mitigation/)
+1. Use of social network information to enhance collaborative filtering performance,
+    by Fengkun Liu and Hong Joo Lee, Expert Systems with Applications, 37,
+    4772-8 (2010).
 
-2. ‘Knowing me, knowing you’ — using profiles and social networking to improve
-   recommender systems, by P. Bonhard and M. A. Sasse, BT Technology Journal,
-   24, 3 (2006).
-
-3. Social   Recommender Systems: An Influence on Public Media,
+1. Social   Recommender Systems: An Influence on Public Media,
     by Bornali Borah, Priyanka Konwar, and Gypsy Nandi,
     I3CS15 (Internaional Conference on Computing and Communication Systems)
             (2015).
 
-4. “The graph-tool python library”, by Tiago P. Peixoto, 
+1. “The graph-tool python library”, by Tiago P. Peixoto, 
    [figshare](http://figshare.com/articles/graph_tool/1164194). DOI:
    10.6084/m9.figshare.1164194 (2014).
 
-5. Mining of Massive Datasets, by Jure Leskovec, Anand Rajaraman, and Jeffrey D. Ullman,
-    [http://infolab.stanford.edu/~ullman/mmds/book.pdf](http://infolab.stanford.edu/~ullman/mmds/book.pdf) (2014). 
-
-6. Systems and methods to facilitate searches based on social graphs and affinity groups,
+1. Systems and methods to facilitate searches based on social graphs and affinity groups,
   by David Yoo, US Patent App. 14/516,875, 
   [https://www.google.com/patents/US20150120589](https://www.google.com/patents/US20150120589),
   (2015).
 
-7. Use of social network information to enhance collaborative filtering performance,
-    by Fengkun Liu and Hong Joo Lee, Expert Systems with Applications, 37,
-    4772-8 (2010).
+1. The Cutting Edge: Network Analytics for Financial Fraud Detection and
+   Mitigation, by Scott Mongeau,
+   [http://sctr7.com/2014/06/27/the-cutting-edge-network-analytics-for-financial-fraud-detection-and-mitigation/]
+   (http://sctr7.com/2014/06/27/the-cutting-edge-network-analytics-for-financial-fraud-detection-and-mitigation/)
+   (2014).
+
+1. I thank mentors and instructors who helped finish this project: Tammy,
+   Robert, Karthik, Dominique, and Tom.
 
 ## Appendix: technical details.
 Here I present some technical details for this project. First, a diagram
@@ -297,7 +315,7 @@ lines like this,
 0.011
 0.12
 ```
-and if you run the code as below.
+and if you run the code as below,
 ```sh
 $ run_cf.py input_params_cf 0 1
 ```
@@ -322,4 +340,4 @@ limits of the number of ratings by friends as 2 and 20.
 In the command line, 1 means it will use the business average rating
 if there is not enough ratings by friends. If this value is 0, it will
 predict only when ratings by friends are available, 
-and find RMSE based on only those cases.
+and find an RMSE based on only those cases.
