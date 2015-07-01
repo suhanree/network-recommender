@@ -317,7 +317,7 @@ lines like this,
 ```
 and if you run the code as below,
 ```sh
-$ run_cf.py input_params_cf 0 1
+$ python run_cf.py input_params_cf 0 1
 ```
 it will run the CF model for all cities (0~9) with `n_features=2`,
    `learning_rate=0.011`, and `regularization_param=0.12`. 
@@ -333,7 +333,7 @@ with 3 lines like this,
 ```
 and run the code as below.
 ```sh
-$ run_nf.py input_params_nf 1
+$ python run_nf.py input_params_nf 1
 ```
 Then, it will run the NF model for all cities (0~9) with the lower and upper
 limits of the number of ratings by friends as 2 and 20.
