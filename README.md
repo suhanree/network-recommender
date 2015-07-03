@@ -236,7 +236,9 @@ model I planned to do, but couldn't due to the time constraint, was using
 communities of the given network. 
 
 * We also learned that hybrid models are needed
-for this model, because it cannot be applied to every case. We used only
+for this model, because it cannot be applied to every case.
+
+* We used only
 ratings here because the main focus of this work is to study and compare
 models, but in reality, other information should be considered for better
 predictions.
