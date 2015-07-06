@@ -110,8 +110,8 @@ number of users (or businesses/reviews) in all 10 cities.
 There are two big cities, Phoenix and Las Vegas, and five medium cities, and
 three small cities.
 ![Fig.3](fig/ratios_by_city.png "Fig.3. Ratios of counts by city")
-One thing that catches our eyes is that the number of users are the highest for
-Las Vegas, even though the number of businesses is not the highest.
+One thing that catches our eyes is that the number of users is the highest for
+Las Vegas, even though the number of businesses is second to Phoenix.
 The numbers of users per business for each city and average degrees are as below.
 
 ||Phoenix|Las Vegas|Charlotte|Montreal|Edinburgh|Pittsburgh|Madison|Karlsruhe|Urbana-Champaign|Waterloo|
@@ -130,7 +130,7 @@ some cities. Overall ratings are skewed toward 5 with the mean at 3.75.
 But if we look at ratings distributions city by city, we can see a clear difference.
 ![Fig.4](fig/ratings_dist.png "Fig.4. Ratings distributions")
 In Phoenix and Las Vegas, 5 is given the most, but in Charlotte and Montreal, 4
-is the most given rating. People in big cities are more generous? Maybe.
+is the most given rating. Are people in big cities more generous? Maybe.
 
 Now we turn our attention to the main focus of this project: a recommender with 
 a social network.
@@ -168,8 +168,8 @@ friends of friends tend to give less accurate predictions.
 
 Because the accuracy is not as good
 if there is only one friend rating, 
-our model has the lower limit (also the upper limit, which is not as important) for
-the number of friend ratings to consider.
+our model has the lower limit (also the upper limit, which is not as important) of
+the number of friend ratings.
 If the number of friend ratings is less than the lower limit, there will
 be no prediction; while if it exceeds the upper limit, the model will
 choose friend ratings randomly for predictions.
@@ -189,8 +189,8 @@ combined with other models to get predictions for all possible cases.
 
 Now we compare our network model (NF) with other models.
 We consider four models: (1) model that uses business average ratings (baseline
-model); (2) model using collaborative filtering with matrix factorization,
-also using business biases (CF);
+model); (2) model using collaborative filtering with the matrix factorization
+(SVD), and business biases (CF);
 (3) model with friend ratings, where the business average ratings are
 used when the method is not applicable (NF + average); (4) model with 
 friend ratings, where only subsets satisfying our condition are considered.
@@ -203,20 +203,20 @@ the average rating for each business.
 There are some discrepancies between cities.
 It is very low for Edinburgh, but it is too small to have any significant meaning.
 Charlotte and Montreal showed relatively low baseline RMSE's, which may be related to
-the ratings distribution we observed earlier (ratings were centered aroung 4,
+the ratings distribution we observed earlier (ratings were centered around 4,
 while ratings for other big cities were different).
 
-For CF, the grid search was performed to find the right parameter set.
-The parameters are n_features (number of latent features), learning_rate
-(learning rate for the stochastic gradient descent), and
-regularization_parameter (regularization parameter).
-A parameter that seems to give the best RMSE was (n_features=2,
-learning_rate=0.011, regularization_parameter=0.12).
-This CF model has features that can add user- or item-biases.
-Item-biases made RMSE's lower, while user-biases didn't.
-So only item-biases were considered when computing RMSE's.
-Somehow CF didn't give us significantly better RMSE's compared to the baseline
-model. For Montreal, CF was a little worse than the baseline model.
+For CF, the grid search was performed to find the right parameter set. The
+parameters are the number of latent features (<code>n_features</code>), the
+learning rate for the stochastic gradient descent (<code>l_rate</code>), and
+the regularization parameter (<code>r_param</code>). A parameter set that seems
+to give the best RMSE was <code>{n_features=2, l_rate=0.011,
+r_param=0.12</code>}</code>. This CF model has features that can add user-
+or business-biases, business-biases made RMSE's lower, while user-biases
+didn't. So only business-biases were considered when computing RMSE's.
+Somehow CF didn't give us significantly better RMSE's compared to the
+baseline model. For Montreal, CF was a little worse than the baseline
+model.
 
 For the network model (NF), RMSE's for subsets are significantly lower for all cities 
 when we only consider predictions done by this method ignoring cases without
@@ -229,22 +229,32 @@ RMSE's are lower than those from CF in all cities shown.
 
 ## Discussions
 
-* The question I asked can be answered; now we observed that 
-networks can help improve recommenders.
+* We can now answer the question I asked in the beginning, based on our results
+from the simplest possible network model: networks can help improve
+recommenders. 
 
-* In most cases, hybrid models are needed,
-  because social networks cannot be applied to every
-  case as shown above. 
+* More elaborate models with networks are also possible; and one
+model I planned to do, but couldn't due to the time constraint, was using
+communities of the given network. 
 
-* This is a well-known problem, and I believe
-many computer scientists and data scientists have been tackling this problem
-in academia and industry for sevaral years now [3-5,7,8]. 
+* We also learned that hybrid models are needed
+for this model, because it cannot be applied to every case.
 
-* Other approaches incorporating networks are possible. One model I planned to
-  do, but couldn't due to the time constraint, 
-  was using communities of the given network.
+* We used only
+ratings here because the main focus of this work is to study and compare
+models, but in reality, other information should be considered for better
+predictions.
 
-* There are many possible applications for this model.
+* I believe many computer scientists and data scientists have been tackling this
+kind of friend-based recommenders in academia and industry for many years now,
+when social networks are available [3-5,7]. 
+
+* There are many possible applications: personalized marketing, 
+    delivery of contents, and so on. 
+* In a big picture, many  machine-learning algorithms with social networks have
+     been used already in many areas like in fraud detection [8] and finding
+     terrorists.
+
 
 ## References
 
@@ -319,10 +329,10 @@ lines like this,
 ```
 and if you run the code as below,
 ```sh
-$ run_cf.py input_params_cf 0 1
+$ python run_cf.py input_params_cf 0 1
 ```
 it will run the CF model for all cities (0~9) with `n_features=2`,
-   `learning_rate=0.011`, and `regularization_param=0.12`. 
+l_rate=0.011`, and `r_param=0.12`. 
 In the command line, 0 and 1 means it will not include user bias (0) and 
 that it will consider item biases (1).
 
@@ -335,7 +345,7 @@ with 3 lines like this,
 ```
 and run the code as below.
 ```sh
-$ run_nf.py input_params_nf 1
+$ python run_nf.py input_params_nf 1
 ```
 Then, it will run the NF model for all cities (0~9) with the lower and upper
 limits of the number of ratings by friends as 2 and 20.
