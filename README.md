@@ -102,9 +102,11 @@ Now we will briefly examine the city-by-city data (for more detailed analysis,
 look at
 [EDA.ipynb](https://github.com/suhanree/network-recommender/blob/master/code/EDA.ipynb),
 done in ipython notebook format).
-If we compare cities by counts, the figure below shows ratios for
-numbers of users, businesses, and ratings (before we drop users based on
+If we compare cities by sizes in our data, the figure below shows ratios for
+numbers of users, businesses, and reviews (before we drop users based on
 the structure of social network).
+For each city, the number of users (or businesses/reviews) is divided by the total
+number of users (or businesses/reviews) in all 10 cities.
 There are two big cities, Phoenix and Las Vegas, and five medium cities, and
 three small cities.
 ![Fig.3](fig/ratios_by_city.png "Fig.3. Ratios of counts by city")
